@@ -1,0 +1,60 @@
+# Trigger CRON + scale-to-zero. Deployment "laporan" mewakili kerja yang hanya perlu berjalan
+# pada waktu tertentu (cth: pemprosesan laporan waktu pejabat). Di luar tetingkap jadual,
+# KEDA menurunkan replicas ke 0, jadi tiada CPU/memori ditempah langsung.
+#
+# Jadual makmal: aktif 5 minit dalam setiap 10 minit (minit 0-5, 10-15, 20-25, ...) supaya
+# peserta nampak 0 -> 2 -> 0 dalam satu sesi. Contoh production (waktu pejabat):
+#   start: "0 8 * * 1-5"    end: "0 18 * * 1-5"
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: laporan
+  namespace: demo
+  labels:
+    app: laporan
+spec:
+  replicas: 0                    # KEDA yang tentukan selepas ini
+  selector:
+    matchLabels:
+      app: laporan
+  template:
+    metadata:
+      labels:
+        app: laporan
+    spec:
+      terminationGracePeriodSeconds: 5
+      containers:
+        - name: kerja
+          image: python:3.12-slim   # sudah dipra-muat untuk demo-app
+          env:
+            - name: TZ                # cap masa log dalam waktu Malaysia (default container: UTC)
+              value: Asia/Kuala_Lumpur
+          command: ["python", "-u", "-c"]
+          args:
+            - |
+              import os, time
+              while True:
+                  print(f"{time.strftime('%H:%M:%S')} {os.environ['HOSTNAME']} memproses laporan...", flush=True)
+                  time.sleep(10)
+          resources:
+            requests: { cpu: 50m, memory: 32Mi }
+            limits: { cpu: 100m, memory: 64Mi }
+---
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: laporan
+  namespace: demo
+spec:
+  scaleTargetRef:
+    name: laporan
+  minReplicaCount: 0             # scale-to-zero di luar jadual
+  maxReplicaCount: 4
+  cooldownPeriod: 30             # default 300. Dalam ujian, trigger cron turun ke 0 tepat bila tetingkap tamat
+  triggers:
+    - type: cron
+      metadata:
+        timezone: Asia/Kuala_Lumpur          # nama zon IANA
+        start: "0,10,20,30,40,50 * * * *"    # format cron 5 medan
+        end: "5,15,25,35,45,55 * * * *"
+        desiredReplicas: "2"

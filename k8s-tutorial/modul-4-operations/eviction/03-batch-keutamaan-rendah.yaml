@@ -1,0 +1,36 @@
+# Demo preemption: "batch" memenuhi kluster dengan keutamaan rendah, kemudian "kritikal"
+# masuk dan scheduler mengusir pod batch untuk memberi ruang.
+# Namespace ops-lab (tiada ResourceQuota). Laraskan replicas "batch" mengikut CPU node anda
+# (lihat README Makmal 4.4C).
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ops-lab
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: batch
+  namespace: ops-lab
+spec:
+  replicas: 4
+  selector:
+    matchLabels:
+      app: batch
+  template:
+    metadata:
+      labels:
+        app: batch
+    spec:
+      priorityClassName: batch-rendah
+      containers:
+        - name: batch
+          image: busybox:1.36
+          command: ["sleep", "infinity"]
+          resources:
+            requests:
+              cpu: "1"
+              memory: 32Mi
+            limits:
+              cpu: "1"
+              memory: 32Mi

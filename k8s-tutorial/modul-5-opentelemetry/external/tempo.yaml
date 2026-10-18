@@ -1,0 +1,46 @@
+# Tempo 3 mod single binary (-target=all): terima trace OTLP, simpan dalam disk tempatan,
+# dan jana metrik span + service graph yang di-remote_write ke Prometheus Modul 3.
+stream_over_http_enabled: true
+
+server:
+  http_listen_port: 3200
+  log_level: info
+
+distributor:
+  receivers:
+    otlp:
+      protocols:
+        grpc:
+          endpoint: 0.0.0.0:4317
+        http:
+          endpoint: 0.0.0.0:4318
+
+# Metrik daripada trace: traces_spanmetrics_* (RED setiap servis) dan traces_service_graph_*
+# (siapa memanggil siapa). Inilah sumber "Service Graph" dalam Grafana.
+metrics_generator:
+  registry:
+    external_labels:
+      source: tempo
+      cluster: lab
+  storage:
+    path: /var/tempo/generator/wal
+    remote_write:
+      - url: http://prometheus:9090/api/v1/write
+        send_exemplars: true
+
+storage:
+  trace:
+    backend: local
+    wal:
+      path: /var/tempo/wal
+    local:
+      path: /var/tempo/blocks
+
+overrides:
+  defaults:
+    metrics_generator:
+      processors: [span-metrics, service-graphs]
+      generate_native_histograms: classic   # Prometheus v3.4.0 bengkel tidak mengaktifkan native histograms
+
+usage_report:
+  reporting_enabled: false

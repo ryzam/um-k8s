@@ -1,0 +1,87 @@
+# demo-app versi "production-ready" untuk zero-downtime rolling update.
+# Perbezaan daripada Modul 1 ditanda [BARU].
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo-app
+  namespace: demo
+  labels:
+    app: demo-app
+spec:
+  revisionHistoryLimit: 10                # [BARU] simpan 10 ReplicaSet lama untuk rollback
+  progressDeadlineSeconds: 120            # [BARU] tanda rollout "gagal" jika tiada kemajuan 2 minit
+  minReadySeconds: 5                      # [BARU] pod mesti Ready 5s sebelum dikira "available"
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 25%                       # [BARU] boleh tambah 25% pod lebih daripada replicas semasa rollout
+      maxUnavailable: 0                   # [BARU] JANGAN kurangkan kapasiti semasa rollout
+  selector:
+    matchLabels:
+      app: demo-app
+  template:
+    metadata:
+      labels:
+        app: demo-app
+        version: v1
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: /metrics
+    spec:
+      terminationGracePeriodSeconds: 30   # [BARU] masa maksimum dari SIGTERM ke SIGKILL
+      topologySpreadConstraints:          # [BARU] sebarkan pod merentas node (tahan node drain)
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app: demo-app
+      containers:
+        - name: app
+          image: python:3.12-slim
+          command: ["python", "-u", "/app/app.py"]
+          env:
+            - name: VERSION
+              value: v1
+            - name: SHUTDOWN_DELAY        # app teruskan layan request 5s selepas SIGTERM
+              value: "5"
+          ports:
+            - name: http
+              containerPort: 8080
+          resources:
+            requests:
+              cpu: 100m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          startupProbe:                   # [BARU] lindungi app yang lambat start daripada liveness
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 2
+            failureThreshold: 15
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: http
+            periodSeconds: 2
+            failureThreshold: 2
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 10
+            failureThreshold: 3
+          lifecycle:
+            preStop:                      # [BARU] beri masa kube-proxy/endpoints buang pod ini
+              sleep:                      #        sebelum SIGTERM dihantar (K8s >= 1.30)
+                seconds: 5
+          volumeMounts:
+            - name: code
+              mountPath: /app
+      volumes:
+        - name: code
+          configMap:
+            name: demo-app-code

@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 290" role="img" aria-labelledby="ptt ptd"><title id="ptt">Kitaran hayat penamatan pod</title><desc id="ptd">Bila pod dipadam, dua perkara berlaku serentak: pod dibuang dari EndpointSlice sementara preStop sleep 5 saat berjalan. Selepas itu SIGTERM dihantar, app menghabiskan request, dan SIGKILL hanya jika melebihi terminationGracePeriodSeconds.</desc><style>svg{--d-zone:#f3f5f8;--d-zone2:#f8f6f1;--d-box:#ffffff;--d-line:#b9c2cf;--d-fg:#18202c;--d-muted:#5a6577;--d-acc:#2457c5;--d-accbg:#e6edfb;--d-warn:#b4540b;--d-warnbg:#fbeee2;--d-ok:#1f7a4d;--d-okbg:#e3f3ea;--d-arrow:#6b7688;--d-grid:#e1e5eb;--d-font:'IBM Plex Sans',system-ui,sans-serif;--d-mono:'IBM Plex Mono',ui-monospace,monospace}@media (prefers-color-scheme:dark){svg{--d-zone:#1a212c;--d-zone2:#211f1b;--d-box:#121821;--d-line:#3c4757;--d-fg:#e6eaf0;--d-muted:#9aa5b6;--d-acc:#7ea4ff;--d-accbg:#1d2a45;--d-warn:#f0a35e;--d-warnbg:#3a2717;--d-ok:#5fcf93;--d-okbg:#16301f;--d-arrow:#8b96a8;--d-grid:#2a3340}}
+.zone{fill:var(--d-zone);stroke:var(--d-line);stroke-width:1.2}
+.zone2{fill:var(--d-zone2);stroke:var(--d-line);stroke-width:1.2;stroke-dasharray:6 4}
+.box{fill:var(--d-box);stroke:var(--d-line);stroke-width:1.2}
+.acc{fill:var(--d-accbg);stroke:var(--d-acc);stroke-width:1.4}
+.warn{fill:var(--d-warnbg);stroke:var(--d-warn);stroke-width:1.4}
+.okb{fill:var(--d-okbg);stroke:var(--d-ok);stroke-width:1.4}
+.solid{fill:var(--d-acc)}
+.t{fill:var(--d-fg);font-size:14px}
+.th{fill:var(--d-fg);font-size:14px;font-weight:600}
+.ts{fill:var(--d-muted);font-size:12px}
+.tl{fill:var(--d-muted);font-size:11px;letter-spacing:.06em;text-transform:uppercase;font-weight:600}
+.ta{fill:var(--d-acc);font-size:12px;font-weight:600}
+.tw{fill:var(--d-warn);font-size:12px;font-weight:600}
+.m{font-family:var(--d-mono)}
+.arr{fill:none;stroke:var(--d-arrow);stroke-width:1.6}
+.arra{fill:none;stroke:var(--d-acc);stroke-width:1.8}
+.dash{stroke-dasharray:5 4}
+.grid{stroke:var(--d-grid);stroke-width:1}
+.area{fill:var(--d-accbg);stroke:var(--d-acc);stroke-width:2}
+.head{fill:var(--d-arrow)}
+.heada{fill:var(--d-acc)}
+text{font-family:var(--d-font)}
+</style><defs><marker id="pth" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="head"/></marker><marker id="pta" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="heada"/></marker></defs><line x1="170" y1="40" x2="170" y2="250" class="arr"/><text x="170" y="30" class="th" text-anchor="middle">pod dipadam</text><text x="20" y="104" class="tl" text-anchor="start">Rangkaian</text><text x="20" y="192" class="tl" text-anchor="start">Container</text><rect x="176" y="80" width="250" height="40" rx="6" class="warn"/><text x="188" y="98" class="ts" text-anchor="start">Buang dari EndpointSlice</text><text x="188" y="113" class="ts" text-anchor="start">kube-proxy kemas kini iptables</text><text x="432" y="104" class="tw" text-anchor="start">ambil masa!</text><rect x="176" y="168" width="250" height="40" rx="6" class="acc"/><text x="188" y="186" class="ts m" text-anchor="start">preStop: sleep 5s</text><text x="188" y="201" class="ts" text-anchor="start">trafik lama masih mungkin tiba</text><rect x="432" y="168" width="250" height="40" rx="6" class="box"/><text x="444" y="186" class="ts m" text-anchor="start">SIGTERM → /readyz gagal</text><text x="444" y="201" class="ts" text-anchor="start">habiskan request (SHUTDOWN_DELAY)</text><line x1="830" y1="150" x2="830" y2="268" class="arr dash"/><text x="830" y="126" class="th m" text-anchor="middle">SIGKILL</text><text x="830" y="142" class="ts" text-anchor="middle">jika masih hidup</text><path d="M686,188 H826" class="arr dash" marker-end="url(#pth)"/><path d="M174,262 H826" class="arr" marker-start="url(#pth)" marker-end="url(#pth)"/><text x="500.0" y="254" class="ts m" text-anchor="middle">terminationGracePeriodSeconds (dikira dari saat pod dipadam)</text><text x="176" y="152" class="ta" text-anchor="start">preStop memberi masa langkah rangkaian selesai sebelum app berhenti</text></svg>

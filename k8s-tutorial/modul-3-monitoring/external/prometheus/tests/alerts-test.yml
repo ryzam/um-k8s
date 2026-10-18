@@ -1,0 +1,47 @@
+# Unit test untuk peraturan alert (tanpa kluster!):
+#   promtool test rules tests/alerts-test.yml
+# atau: docker run --rm -v $PWD:/p -w /p --entrypoint promtool prom/prometheus:v3.4.0 test rules tests/alerts-test.yml
+rule_files:
+  - ../rules/kubernetes-alerts.yml
+evaluation_interval: 1m
+
+tests:
+  - name: HPA pada maxReplicas selama 5 minit mencetuskan HPAMaxedOut
+    interval: 1m
+    input_series:
+      - series: 'kube_horizontalpodautoscaler_status_current_replicas{namespace="demo",horizontalpodautoscaler="demo-app"}'
+        values: '2 6 10 10 10 10 10 10 10'
+      - series: 'kube_horizontalpodautoscaler_spec_max_replicas{namespace="demo",horizontalpodautoscaler="demo-app"}'
+        values: '10x8'
+    alert_rule_test:
+      - eval_time: 4m
+        alertname: HPAMaxedOut
+        exp_alerts: []          # baru 2 minit pada max, belum cukup "for: 5m"
+      - eval_time: 8m
+        alertname: HPAMaxedOut
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              namespace: demo
+              horizontalpodautoscaler: demo-app
+            exp_annotations:
+              summary: "HPA demo/demo-app pada maxReplicas selama 5 minit"
+              description: "Kapasiti autoscaling habis. Pertimbangkan naikkan maxReplicas atau optimumkan app."
+
+  - name: Container restart berulang mencetuskan PodCrashLooping
+    interval: 1m
+    input_series:
+      - series: 'kube_pod_container_status_restarts_total{namespace="demo",pod="demo-app-abc",container="app"}'
+        values: '0 1 2 3 4 5 6 7 8 9'
+    alert_rule_test:
+      - eval_time: 9m
+        alertname: PodCrashLooping
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              namespace: demo
+              pod: demo-app-abc
+              container: app
+            exp_annotations:
+              summary: "Pod demo/demo-app-abc crash-looping"
+              description: "Container app restart 9 kali dalam 10 minit."

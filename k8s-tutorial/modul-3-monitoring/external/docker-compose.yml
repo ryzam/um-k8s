@@ -1,0 +1,71 @@
+# Stack monitoring LUAR kluster: Prometheus + Alertmanager + Grafana + Mailpit (SMTP ujian).
+# Dalam makmal, stack ini disambung ke rangkaian Docker "k3d-lab" (dicipta oleh k3d) supaya boleh capai
+# k3d-lab-server-0:6443 (API server), <IP-node>:9100 (node-exporter) dan <node>:30081 (KSM).
+# Di persekitaran sebenar, ini ialah pelayan monitoring berasingan anda.
+#   ./get-k8s-credentials.sh     # sekali, untuk token & CA
+#   docker compose up -d
+name: monitoring-luar
+
+services:
+  prometheus:
+    image: prom/prometheus:v3.4.0
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=7d
+      - --web.enable-lifecycle             # benarkan POST /-/reload
+      - --web.enable-remote-write-receiver # untuk Pilihan B (Prometheus Agent dalam kluster)
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus:/etc/prometheus:ro
+      - prometheus-data:/prometheus
+    networks: [k3d-lab, monitoring]
+    restart: unless-stopped
+
+  alertmanager:
+    image: prom/alertmanager:v0.28.1
+    command:
+      - --config.file=/etc/alertmanager/alertmanager.yml
+      - --storage.path=/alertmanager
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./alertmanager:/etc/alertmanager:ro
+    networks: [monitoring]
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:12.0.0
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin123   # tukar untuk kegunaan sebenar
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_SMTP_ENABLED: "true"                # untuk Grafana-managed alerting ke email
+      GF_SMTP_HOST: mailpit:1025
+      GF_SMTP_FROM_ADDRESS: grafana@bengkel.local
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    networks: [monitoring]
+    restart: unless-stopped
+
+  # Pelayan SMTP palsu untuk menguji alert email tanpa akaun email sebenar.
+  # UI: http://localhost:8025
+  mailpit:
+    image: axllent/mailpit:v1.25
+    ports:
+      - "8025:8025"
+    networks: [monitoring]
+    restart: unless-stopped
+
+networks:
+  k3d-lab:
+    external: true      # rangkaian yang dicipta oleh k3d untuk kluster "lab"
+  monitoring: {}
+
+volumes:
+  prometheus-data: {}
+  grafana-data: {}

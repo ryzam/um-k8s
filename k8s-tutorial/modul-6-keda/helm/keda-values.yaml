@@ -1,0 +1,33 @@
+# Nilai Helm untuk KEDA dalam kluster makmal (chart kedacore/keda 2.20.2).
+#   helm install keda kedacore/keda --version 2.20.2 -n keda --create-namespace -f helm/keda-values.yaml
+# Hanya nilai yang berbeza daripada default chart disenaraikan di sini.
+
+image:
+  # Default chart ialah Always: setiap pod baharu menarik semula dari ghcr.io. IfNotPresent
+  # membolehkan image yang dipra-muat dengan "k3d image import" digunakan (Wi-Fi bengkel perlahan).
+  pullPolicy: IfNotPresent
+
+# Default chart: requests 100m/100Mi, limits 1 CPU/1000Mi untuk setiap komponen.
+# Laptop bengkel tidak perlu sebanyak itu; KEDA hanya memantau beberapa ScaledObject.
+resources:
+  operator:
+    requests: { cpu: 50m, memory: 64Mi }
+    limits: { cpu: 500m, memory: 256Mi }
+  metricServer:
+    requests: { cpu: 50m, memory: 64Mi }
+    limits: { cpu: 500m, memory: 256Mi }
+  webhooks:
+    requests: { cpu: 20m, memory: 32Mi }
+    limits: { cpu: 200m, memory: 128Mi }
+
+# Operator KEDA mendedahkan metrik Prometheus pada port 8080 (cth: keda_scaler_metrics_value,
+# keda_scaler_detail_errors_total). Anotasi ini membolehkan job "kubernetes-pods" Prometheus luar
+# Modul 3 scrape operator melalui proxy API server, sama seperti demo-app.
+prometheus:
+  operator:
+    enabled: true
+podAnnotations:
+  keda:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "8080"
+    prometheus.io/path: /metrics

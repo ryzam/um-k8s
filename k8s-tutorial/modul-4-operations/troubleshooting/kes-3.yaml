@@ -1,0 +1,30 @@
+# KES 3: "Pod mati bila trafik tinggi, tiada error dalam log aplikasi"
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kes-3-cache
+  namespace: troubleshoot
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: kes-3-cache }
+  template:
+    metadata:
+      labels: { app: kes-3-cache }
+    spec:
+      containers:
+        - name: cache
+          image: python:3.12-slim
+          command:
+            - python
+            - -c
+            - |
+              import time
+              cache = []
+              while True:
+                  cache.append(bytearray(10 * 1024 * 1024))   # 10 MB setiap 2 saat
+                  print(f"cache: {len(cache) * 10} MB", flush=True)
+                  time.sleep(2)
+          resources:
+            requests: { cpu: 50m, memory: 64Mi }
+            limits:   { cpu: 200m, memory: 96Mi }

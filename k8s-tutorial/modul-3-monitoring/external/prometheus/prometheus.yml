@@ -1,0 +1,133 @@
+# Prometheus LUAR kluster. Gantikan nilai berikut untuk persekitaran sebenar:
+#   k3d-lab-server-0:6443   -> alamat API server anda (cth: k8s-api.syarikat.local:6443)
+#   k3d-lab-agent-0:30081   -> <IP-mana-mana-node>:30081 (NodePort kube-state-metrics)
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: lab              # bezakan kluster jika satu Prometheus memantau banyak kluster
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ["alertmanager:9093"]
+
+rule_files:
+  - /etc/prometheus/rules/*.yml
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  # 1) kube-state-metrics melalui NodePort
+  - job_name: kube-state-metrics
+    honor_labels: true        # kekalkan label namespace/pod daripada KSM, bukan label target
+    static_configs:
+      - targets: ["k3d-lab-agent-0:30081"]
+
+  # 2) node-exporter: cari semua node melalui API server, scrape <InternalIP>:9100
+  - job_name: node-exporter
+    kubernetes_sd_configs:
+      - role: node
+        api_server: https://k3d-lab-server-0:6443
+        authorization:
+          credentials_file: /etc/prometheus/k8s/token
+        tls_config:
+          ca_file: /etc/prometheus/k8s/ca.crt
+    relabel_configs:
+      - source_labels: [__address__]
+        regex: (.+):\d+
+        target_label: __address__
+        replacement: $1:9100
+      - source_labels: [__meta_kubernetes_node_name]
+        target_label: node
+
+  # 3) cAdvisor (CPU/memori/throttling setiap container) melalui API server proxy
+  - job_name: kubernetes-cadvisor
+    scheme: https
+    authorization:
+      credentials_file: /etc/prometheus/k8s/token
+    tls_config:
+      ca_file: /etc/prometheus/k8s/ca.crt
+    kubernetes_sd_configs:
+      - role: node
+        api_server: https://k3d-lab-server-0:6443
+        authorization:
+          credentials_file: /etc/prometheus/k8s/token
+        tls_config:
+          ca_file: /etc/prometheus/k8s/ca.crt
+    relabel_configs:
+      - target_label: __address__
+        replacement: k3d-lab-server-0:6443
+      - source_labels: [__meta_kubernetes_node_name]
+        regex: (.+)
+        target_label: __metrics_path__
+        replacement: /api/v1/nodes/$1/proxy/metrics/cadvisor
+      - source_labels: [__meta_kubernetes_node_name]
+        target_label: node
+    metric_relabel_configs:
+      # Buang siri cgroup peringkat pod/sandbox (container="" atau "POD") untuk jimat storan
+      - source_labels: [container]
+        regex: ^$|POD
+        action: drop
+
+  # 4) kubelet (status pod, volume, PLEG) melalui API server proxy
+  - job_name: kubelet
+    scheme: https
+    authorization:
+      credentials_file: /etc/prometheus/k8s/token
+    tls_config:
+      ca_file: /etc/prometheus/k8s/ca.crt
+    kubernetes_sd_configs:
+      - role: node
+        api_server: https://k3d-lab-server-0:6443
+        authorization:
+          credentials_file: /etc/prometheus/k8s/token
+        tls_config:
+          ca_file: /etc/prometheus/k8s/ca.crt
+    relabel_configs:
+      - target_label: __address__
+        replacement: k3d-lab-server-0:6443
+      - source_labels: [__meta_kubernetes_node_name]
+        regex: (.+)
+        target_label: __metrics_path__
+        replacement: /api/v1/nodes/$1/proxy/metrics
+      - source_labels: [__meta_kubernetes_node_name]
+        target_label: node
+
+  # 5) Pod aplikasi yang ada anotasi prometheus.io/scrape: "true", melalui API server proxy
+  - job_name: kubernetes-pods
+    scheme: https
+    authorization:
+      credentials_file: /etc/prometheus/k8s/token
+    tls_config:
+      ca_file: /etc/prometheus/k8s/ca.crt
+    kubernetes_sd_configs:
+      - role: pod
+        api_server: https://k3d-lab-server-0:6443
+        authorization:
+          credentials_file: /etc/prometheus/k8s/token
+        tls_config:
+          ca_file: /etc/prometheus/k8s/ca.crt
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+        regex: "true"
+        action: keep
+      - source_labels: [__meta_kubernetes_pod_phase]
+        regex: Running
+        action: keep
+      - source_labels: [__meta_kubernetes_namespace, __meta_kubernetes_pod_name, __meta_kubernetes_pod_annotation_prometheus_io_port, __meta_kubernetes_pod_annotation_prometheus_io_path]
+        regex: (.+);(.+);(.+);(.+)
+        target_label: __metrics_path__
+        replacement: /api/v1/namespaces/$1/pods/$2:$3/proxy$4
+      - target_label: __address__
+        replacement: k3d-lab-server-0:6443
+      - source_labels: [__meta_kubernetes_namespace]
+        target_label: namespace
+      - source_labels: [__meta_kubernetes_pod_name]
+        target_label: pod
+      - source_labels: [__meta_kubernetes_pod_label_app]
+        target_label: app
+      - source_labels: [__meta_kubernetes_pod_label_version]
+        target_label: version

@@ -1,0 +1,57 @@
+# CANARY: versi baharu, bermula dengan 1 pod (~20%).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo-canary-canary
+  namespace: demo
+  labels:
+    app: demo-canary
+    track: canary
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: demo-canary
+      track: canary
+  template:
+    metadata:
+      labels:
+        app: demo-canary
+        track: canary
+        version: v2
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: /metrics
+    spec:
+      containers:
+        - name: app
+          image: python:3.12-slim
+          command: ["python", "-u", "/app/app.py"]
+          env:
+            - name: VERSION
+              value: v2
+            - name: FAIL_RATE        # Makmal 4.3B: tukar ke "0.3" untuk simulasi canary rosak
+              value: "0"
+          ports:
+            - name: http
+              containerPort: 8080
+          resources:
+            requests:
+              cpu: 100m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: http
+            periodSeconds: 2
+          volumeMounts:
+            - name: code
+              mountPath: /app
+      volumes:
+        - name: code
+          configMap:
+            name: demo-app-code

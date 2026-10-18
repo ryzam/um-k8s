@@ -1,0 +1,24 @@
+# KES 6: "Container tak boleh dicipta"
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kes-6-payment
+  namespace: troubleshoot
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: kes-6-payment }
+  template:
+    metadata:
+      labels: { app: kes-6-payment }
+    spec:
+      containers:
+        - name: payment
+          image: busybox:1.36
+          command: ["sh", "-c", "echo token=$API_TOKEN; sleep 3600"]
+          env:
+            - name: API_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: payment-gateway
+                  key: token

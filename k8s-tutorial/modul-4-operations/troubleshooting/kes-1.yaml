@@ -1,0 +1,19 @@
+# KES 1: "Pod saya tak start langsung"
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kes-1-web
+  namespace: troubleshoot
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: kes-1-web }
+  template:
+    metadata:
+      labels: { app: kes-1-web }
+    spec:
+      containers:
+        - name: web
+          image: nginx:1.27.99-alpine
+          ports:
+            - containerPort: 80

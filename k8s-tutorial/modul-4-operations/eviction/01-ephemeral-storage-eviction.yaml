@@ -1,0 +1,31 @@
+# Simulasi eviction oleh kubelet: pod menulis 200 MB ke disk tempatan tetapi
+# limits.ephemeral-storage hanya 50Mi. Kubelet akan EVICT pod ini (status: Failed, reason: Evicted).
+# Ini mekanisme yang sama seperti node-pressure eviction (DiskPressure / MemoryPressure).
+apiVersion: v1
+kind: Pod
+metadata:
+  name: disk-hog
+  namespace: demo
+  labels:
+    app: disk-hog
+spec:
+  restartPolicy: Never
+  containers:
+    - name: hog
+      image: busybox:1.36
+      command: ["sh", "-c", "echo menulis 200MB...; dd if=/dev/zero of=/data/big bs=1M count=200; echo siap; sleep 3600"]
+      resources:
+        requests:
+          cpu: 50m
+          memory: 32Mi
+          ephemeral-storage: 20Mi
+        limits:
+          cpu: 100m
+          memory: 64Mi
+          ephemeral-storage: 50Mi
+      volumeMounts:
+        - name: scratch
+          mountPath: /data
+  volumes:
+    - name: scratch
+      emptyDir: {}

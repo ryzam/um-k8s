@@ -1,0 +1,15 @@
+# Makmal 2.5: "node penuh". requests.cpu besar menyebabkan pod baharu Pending
+# (Insufficient cpu) bila HPA scale-out. Patch ini hanya ubah resources.
+# Guna:  kubectl -n demo patch deploy demo-app --patch-file deployment-requests-besar.yaml
+spec:
+  template:
+    spec:
+      containers:
+        - name: app
+          resources:
+            requests:
+              cpu: "1500m"
+              memory: 64Mi
+            limits:
+              cpu: "2"
+              memory: 256Mi

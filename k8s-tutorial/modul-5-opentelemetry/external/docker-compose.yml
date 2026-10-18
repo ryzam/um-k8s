@@ -1,0 +1,28 @@
+# Storan trace LUAR kluster (Modul 5, pilihan): Grafana Tempo.
+#   Collector dalam kluster -> tempo:4317 (OTLP gRPC) melalui rangkaian k3d-lab
+#   Grafana (Modul 3)       -> tempo:3200 (API query) melalui rangkaian monitoring Modul 3
+#   Tempo                   -> prometheus:9090 (remote_write metrik span & service graph)
+# Prasyarat: stack Modul 3 (docker compose di ../../modul-3-monitoring/external) sedang berjalan.
+name: tracing-luar
+
+services:
+  tempo:
+    image: grafana/tempo:3.1.0
+    command: ["-target=all", "-config.file=/etc/tempo/tempo.yaml"]
+    ports:
+      - "3200:3200"           # API Tempo: http://localhost:3200/ready
+    volumes:
+      - ./tempo.yaml:/etc/tempo/tempo.yaml:ro
+      - tempo-data:/var/tempo
+    networks: [k3d-lab, monitoring]
+    restart: unless-stopped
+
+networks:
+  k3d-lab:
+    external: true      # rangkaian yang dicipta oleh k3d untuk kluster "lab"
+  monitoring:
+    external: true
+    name: monitoring-luar_monitoring   # rangkaian yang dicipta oleh docker compose Modul 3
+
+volumes:
+  tempo-data: {}

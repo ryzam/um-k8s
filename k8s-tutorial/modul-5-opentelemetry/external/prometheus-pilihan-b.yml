@@ -1,0 +1,26 @@
+# Prometheus LUAR untuk Pilihan B (Modul 5): kluster MENOLAK metrik melalui remote_write
+# (OpenTelemetry Collector), jadi Prometheus tidak lagi scrape kluster. Hanya job "prometheus" kekal.
+# Peraturan alert dan Alertmanager sama seperti Modul 3, kerana nama metrik dan label job tidak berubah.
+# Guna (dalam modul-3-monitoring/external):
+#   cp prometheus/prometheus.yml prometheus/prometheus.yml.asal
+#   cp ../../modul-5-opentelemetry/external/prometheus-pilihan-b.yml prometheus/prometheus.yml
+#   curl -X POST localhost:9090/-/reload
+# Pulihkan Pilihan A: cp prometheus/prometheus.yml.asal prometheus/prometheus.yml && curl -X POST localhost:9090/-/reload
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: lab
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ["alertmanager:9093"]
+
+rule_files:
+  - /etc/prometheus/rules/*.yml
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]

@@ -1,0 +1,11 @@
+{
+  "identities": [
+    {
+      "name": "fluentbit",
+      "credentials": [
+        { "accessKey": "fluentbit", "secretKey": "fluentbit-rahsia-123" }
+      ],
+      "actions": ["Read", "Write", "List", "Tagging", "Admin"]
+    }
+  ]
+}

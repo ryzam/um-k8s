@@ -1,0 +1,22 @@
+# RUJUKAN SAHAJA (bukan sebahagian makmal k3d asas): canary berasaskan BERAT trafik
+# menggunakan Gateway API. Memerlukan Gateway controller (cth: Envoy Gateway, Istio, Cilium,
+# NGINX Gateway Fabric) dan Gateway bernama "web". Berbeza dengan nisbah pod, berat di sini
+# tepat (cth: 5%) tanpa mengira bilangan pod.
+# Perlu dua Service berasingan: demo-canary-stable-svc (track=stable) dan demo-canary-canary-svc (track=canary).
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: demo-canary
+  namespace: demo
+spec:
+  parentRefs:
+    - name: web
+  hostnames: ["demo.bengkel.local"]
+  rules:
+    - backendRefs:
+        - name: demo-canary-stable-svc
+          port: 80
+          weight: 95
+        - name: demo-canary-canary-svc
+          port: 80
+          weight: 5

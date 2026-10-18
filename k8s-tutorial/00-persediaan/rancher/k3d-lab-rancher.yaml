@@ -1,0 +1,34 @@
+# Kluster makmal k3d untuk Opsyen B, cara 2 (sekali): Rancher dipasang terus dalam kluster lab.
+# Sama seperti ../k3d-cluster.yaml (nama lab, 1 server + 2 agent, API 127.0.0.1:6550, NodePort 30080-30082),
+# KECUALI: Traefik dibiarkan aktif dan port 443 laptop dipetakan ke loadbalancer k3d (ingress untuk Rancher).
+# Guna:  k3d cluster create --config k3d-lab-rancher.yaml   (GANTIKAN Persediaan Langkah 1, bukan tambahan)
+apiVersion: k3d.io/v1alpha5
+kind: Simple
+metadata:
+  name: lab                       # node: k3d-lab-server-0, k3d-lab-agent-0, k3d-lab-agent-1 (sama seperti Opsyen A)
+servers: 1
+agents: 2
+image: rancher/k3s:v1.33.1-k3s1   # semak support matrix Rancher sebelum menukar versi
+kubeAPI:
+  hostIP: "127.0.0.1"
+  hostPort: "6550"                # kubectl dari laptop: https://127.0.0.1:6550
+ports:
+  - port: 30080:30080
+    nodeFilters: [server:0:direct]
+  - port: 30081:30081
+    nodeFilters: [server:0:direct]
+  - port: 30082:30082
+    nodeFilters: [server:0:direct]
+  - port: 443:443                 # https://rancher.<IP-laptop>.sslip.io (Traefik)
+    nodeFilters: [loadbalancer]
+options:
+  k3s:
+    extraArgs:
+      # Traefik TIDAK dimatikan: ia menjadi ingress untuk Rancher. Metrics Server tetap dipasang sendiri dalam Modul 1.
+      - arg: --disable=metrics-server
+        nodeFilters: [server:*]
+      - arg: --node-taint=node-role.kubernetes.io/control-plane:NoSchedule
+        nodeFilters: [server:*]
+  kubeconfig:
+    updateDefaultKubeconfig: true
+    switchCurrentContext: true    # context: k3d-lab

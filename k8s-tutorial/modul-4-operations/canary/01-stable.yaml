@@ -1,0 +1,56 @@
+# STABLE: versi semasa. Berkongsi label app=demo-canary dengan canary, jadi Service yang sama
+# membahagi trafik mengikut NISBAH POD (cth: 4 stable + 1 canary = ~20% ke canary).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo-canary-stable
+  namespace: demo
+  labels:
+    app: demo-canary
+    track: stable
+spec:
+  replicas: 4
+  selector:
+    matchLabels:
+      app: demo-canary
+      track: stable
+  template:
+    metadata:
+      labels:
+        app: demo-canary
+        track: stable
+        version: v1
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: /metrics
+    spec:
+      containers:
+        - name: app
+          image: python:3.12-slim
+          command: ["python", "-u", "/app/app.py"]
+          env:
+            - name: VERSION
+              value: v1
+          ports:
+            - name: http
+              containerPort: 8080
+          resources:
+            requests:
+              cpu: 100m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: http
+            periodSeconds: 2
+          volumeMounts:
+            - name: code
+              mountPath: /app
+      volumes:
+        - name: code
+          configMap:
+            name: demo-app-code

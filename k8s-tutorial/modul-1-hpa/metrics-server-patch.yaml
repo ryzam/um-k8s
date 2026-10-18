@@ -1,0 +1,10 @@
+# Patch untuk Metrics Server di k3d/kind/minikube/lab: sijil kubelet tidak disahkan oleh CA yang Metrics Server kenal,
+# jadi Metrics Server perlu --kubelet-insecure-tls. JANGAN guna flag ini di production
+# (di production, pastikan sijil kubelet ditandatangani CA kluster).
+# Guna:  kubectl -n kube-system patch deployment metrics-server --type=json --patch-file metrics-server-patch.yaml
+- op: add
+  path: /spec/template/spec/containers/0/args/-
+  value: --kubelet-insecure-tls
+- op: add
+  path: /spec/template/spec/containers/0/args/-
+  value: --metric-resolution=15s

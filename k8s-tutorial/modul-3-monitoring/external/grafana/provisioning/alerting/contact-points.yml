@@ -1,0 +1,44 @@
+# Grafana-managed alerting (alternatif kepada Alertmanager). Contact point = ke mana notifikasi dihantar.
+# Gantikan URL GANTI-... dengan webhook sebenar.
+apiVersion: 1
+contactPoints:
+  - orgId: 1
+    name: email-pasukan
+    receivers:
+      - uid: cp-email
+        type: email
+        settings:
+          addresses: devops@bengkel.local
+          singleEmail: true
+  - orgId: 1
+    name: slack-oncall
+    receivers:
+      - uid: cp-slack
+        type: slack
+        settings:
+          url: https://hooks.slack.com/services/GANTI/DENGAN/WEBHOOK
+          recipient: "#k8s-alerts"
+  - orgId: 1
+    name: teams-oncall
+    receivers:
+      - uid: cp-teams
+        type: teams
+        settings:
+          url: https://GANTI.webhook.office.com/workflows/DENGAN-URL-WORKFLOW
+
+policies:
+  - orgId: 1
+    receiver: email-pasukan
+    group_by: [grafana_folder, alertname]
+    group_wait: 30s
+    group_interval: 2m
+    repeat_interval: 4h
+    routes:
+      - receiver: slack-oncall
+        object_matchers:
+          - [severity, "=", critical]
+        continue: true
+      - receiver: teams-oncall
+        object_matchers:
+          - [severity, "=", critical]
+        continue: true

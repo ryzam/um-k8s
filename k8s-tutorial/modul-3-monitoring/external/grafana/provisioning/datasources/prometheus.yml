@@ -1,0 +1,42 @@
+apiVersion: 1
+datasources:
+  - name: Prometheus
+    uid: prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    jsonData:
+      timeInterval: 15s
+  - name: Alertmanager
+    uid: alertmanager
+    type: alertmanager
+    access: proxy
+    url: http://alertmanager:9093
+    jsonData:
+      implementation: prometheus
+  # Digunakan dalam Modul 4 (log shipping). Tidak mengapa jika Loki belum berjalan semasa Modul 3.
+  - name: Loki
+    uid: loki
+    type: loki
+    access: proxy
+    url: http://loki:3100
+  # Digunakan dalam Modul 5 (pilihan, OpenTelemetry). Tidak mengapa jika Tempo belum berjalan.
+  - name: Tempo
+    uid: tempo
+    type: tempo
+    access: proxy
+    url: http://tempo:3200
+    jsonData:
+      serviceMap:
+        datasourceUid: prometheus       # metrik traces_service_graph_* daripada metrics-generator Tempo
+      nodeGraph:
+        enabled: true
+      tracesToLogsV2:
+        datasourceUid: loki             # log Fluent Bit (Modul 4) yang mengandungi trace_id
+        filterByTraceId: true
+        spanStartTimeShift: -5m
+        spanEndTimeShift: 5m
+        tags:
+          - key: k8s.namespace.name
+            value: namespace

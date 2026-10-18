@@ -1,0 +1,60 @@
+# Storan log LUAR kluster:
+#   Loki      -> log boleh dicari dalam Grafana (LogQL), simpanan 7 hari
+#   SeaweedFS -> object storage serasi S3 untuk arkib jangka panjang (fail .gz mengikut tarikh)
+# Kedua-duanya disambung ke rangkaian "k3d-lab" (supaya Fluent Bit dalam kluster boleh capai)
+# dan ke rangkaian stack Modul 3 (supaya Grafana boleh query Loki).
+name: logging-luar
+
+services:
+  loki:
+    image: grafana/loki:3.5.0
+    command: ["-config.file=/etc/loki/config.yaml"]
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./loki-config.yaml:/etc/loki/config.yaml:ro
+      - loki-data:/loki
+    networks: [k3d-lab, monitoring]
+    restart: unless-stopped
+
+  s3:
+    image: chrislusf/seaweedfs:3.85
+    command: ["server", "-dir=/data", "-s3", "-s3.port=8333", "-s3.config=/etc/seaweedfs/s3.json"]
+    ports:
+      - "8333:8333"
+    volumes:
+      - ./s3-identities.json:/etc/seaweedfs/s3.json:ro
+      - s3-data:/data
+    networks: [k3d-lab]
+    restart: unless-stopped
+
+  # Cipta bucket k8s-logs sekali selepas S3 sedia
+  create-bucket:
+    image: amazon/aws-cli:2.27.0
+    depends_on: [s3]
+    environment:
+      AWS_ACCESS_KEY_ID: fluentbit
+      AWS_SECRET_ACCESS_KEY: fluentbit-rahsia-123
+      AWS_DEFAULT_REGION: us-east-1
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        for i in $$(seq 1 30); do
+          aws --endpoint-url http://s3:8333 s3 mb s3://k8s-logs 2>/dev/null && echo "bucket k8s-logs dicipta" && exit 0
+          aws --endpoint-url http://s3:8333 s3 ls s3://k8s-logs >/dev/null 2>&1 && echo "bucket sudah wujud" && exit 0
+          sleep 2
+        done
+        echo "gagal cipta bucket" && exit 1
+    networks: [k3d-lab]
+    restart: "no"
+
+networks:
+  kind:
+    external: true
+  monitoring:
+    external: true
+    name: monitoring-luar_monitoring   # rangkaian yang dicipta oleh docker compose Modul 3
+
+volumes:
+  loki-data: {}
+  s3-data: {}

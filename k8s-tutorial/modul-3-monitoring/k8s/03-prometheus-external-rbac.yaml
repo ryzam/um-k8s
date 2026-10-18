@@ -1,0 +1,48 @@
+# Identiti untuk Prometheus LUAR kluster. Prometheus guna token ini untuk:
+#   1. Service discovery (senarai node, pod) melalui API server
+#   2. Scrape kubelet/cAdvisor dan pod app melalui API server proxy
+#      (/api/v1/nodes/<node>/proxy/metrics/cadvisor, /api/v1/namespaces/<ns>/pods/<pod>:<port>/proxy/metrics)
+# Dengan cara ini, Prometheus luar hanya perlu capai API server (port 6443), bukan IP pod.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: prometheus-external
+  namespace: monitoring
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: prometheus-external
+rules:
+  - apiGroups: [""]
+    resources: [nodes, nodes/metrics, nodes/proxy, services, endpoints, pods, pods/proxy]
+    verbs: [get, list, watch]
+  - apiGroups: [discovery.k8s.io]
+    resources: [endpointslices]
+    verbs: [get, list, watch]
+  - nonResourceURLs: [/metrics, /metrics/cadvisor]
+    verbs: [get]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: prometheus-external
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: prometheus-external
+subjects:
+  - kind: ServiceAccount
+    name: prometheus-external
+    namespace: monitoring
+---
+# Token jangka panjang untuk sistem luar. Di production, pertimbangkan token jangka pendek
+# (kubectl create token --duration) yang diputar secara automatik.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: prometheus-external-token
+  namespace: monitoring
+  annotations:
+    kubernetes.io/service-account.name: prometheus-external
+type: kubernetes.io/service-account-token

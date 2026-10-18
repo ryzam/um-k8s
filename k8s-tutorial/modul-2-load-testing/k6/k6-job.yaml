@@ -1,0 +1,55 @@
+# Jalankan k6 DI DALAM kluster (namespace loadtest) supaya beban tidak dihadkan oleh
+# rangkaian laptop / NodePort, dan tidak dikira dalam ResourceQuota namespace demo.
+# Sediakan skrip dahulu:
+#   kubectl create namespace loadtest
+#   kubectl -n loadtest create configmap k6-scripts --from-file=k6/ --dry-run=client -o yaml | kubectl apply -f -
+#   kubectl apply -f k6/k6-job.yaml
+#   kubectl -n loadtest logs -f job/k6-load
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: k6-load
+  namespace: loadtest
+spec:
+  backoffLimit: 0
+  ttlSecondsAfterFinished: 3600
+  template:
+    metadata:
+      labels:
+        app: k6
+    spec:
+      restartPolicy: Never
+      # Elak k6 berkongsi node dengan pod demo-app supaya tidak "mencuri" CPU mereka
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                topologyKey: kubernetes.io/hostname
+                namespaceSelector: {}
+                labelSelector:
+                  matchLabels:
+                    app: demo-app
+      containers:
+        - name: k6
+          image: grafana/k6:1.0.0
+          args: ["run", "/scripts/load.js"]
+          env:
+            - name: BASE_URL
+              value: http://demo-app.demo.svc.cluster.local
+            - name: K6_NO_USAGE_REPORT
+              value: "true"
+          resources:
+            requests:
+              cpu: 500m
+              memory: 256Mi
+            limits:
+              cpu: "2"
+              memory: 1Gi
+          volumeMounts:
+            - name: scripts
+              mountPath: /scripts
+      volumes:
+        - name: scripts
+          configMap:
+            name: k6-scripts

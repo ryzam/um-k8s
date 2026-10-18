@@ -1,0 +1,181 @@
+# Fluent Bit DaemonSet: baca log semua container pada setiap node (/var/log/containers),
+# tambah metadata Kubernetes, dan hantar ke storan LUAR kluster:
+#   1) Loki   (cari log dalam Grafana)
+#   2) S3     (arkib .gz jangka panjang; di sini SeaweedFS, di production AWS S3 / MinIO / Ceph)
+# Gantikan hos "loki" dan "s3" dengan alamat sebenar untuk persekitaran anda.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: logging
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: fluent-bit
+  namespace: logging
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: fluent-bit
+rules:
+  - apiGroups: [""]
+    resources: [namespaces, pods]
+    verbs: [get, list, watch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: fluent-bit
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: fluent-bit
+subjects:
+  - kind: ServiceAccount
+    name: fluent-bit
+    namespace: logging
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: s3-credentials
+  namespace: logging
+type: Opaque
+stringData:
+  AWS_ACCESS_KEY_ID: fluentbit
+  AWS_SECRET_ACCESS_KEY: fluentbit-rahsia-123
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fluent-bit-config
+  namespace: logging
+data:
+  fluent-bit.conf: |
+    [SERVICE]
+        Flush                     5
+        Log_Level                 info
+        Parsers_File              /fluent-bit/etc/parsers.conf
+        HTTP_Server               On
+        HTTP_Listen               0.0.0.0
+        HTTP_Port                 2020
+        Health_Check              On
+        # Penimbal di disk: jika Loki/S3 tidak dapat dicapai, log disimpan dan dihantar semula
+        storage.path              /var/fluent-bit/state/flb-storage/
+        storage.sync              normal
+        storage.backlog.mem_limit 5M
+
+    [INPUT]
+        Name              tail
+        Tag               kube.*
+        Path              /var/log/containers/*.log
+        Exclude_Path      /var/log/containers/fluent-bit-*.log
+        multiline.parser  cri, docker
+        DB                /var/fluent-bit/state/flb_kube.db
+        Mem_Buf_Limit     50MB
+        Skip_Long_Lines   On
+        Refresh_Interval  10
+        storage.type      filesystem
+
+    [FILTER]
+        Name                kubernetes
+        Match               kube.*
+        Kube_URL            https://kubernetes.default.svc:443
+        Merge_Log           On
+        Keep_Log            Off
+        K8S-Logging.Parser  On
+        K8S-Logging.Exclude On
+        Labels              On
+        Annotations         Off
+
+    # Buang log probe/scrape yang bising (app demo log setiap request sebagai JSON field "msg")
+    [FILTER]
+        Name     grep
+        Match    kube.*
+        Exclude  msg (GET /(healthz|readyz|metrics))
+
+    [OUTPUT]
+        Name        loki
+        Match       kube.*
+        Host        loki
+        Port        3100
+        Labels      job=fluent-bit, cluster=lab, namespace=$kubernetes['namespace_name'], pod=$kubernetes['pod_name'], container=$kubernetes['container_name']
+        Line_Format json
+        Retry_Limit 10
+
+    [OUTPUT]
+        Name             s3
+        Match            kube.*
+        bucket           k8s-logs
+        region           us-east-1
+        endpoint         http://s3:8333
+        use_put_object   On
+        compression      gzip
+        total_file_size  5M
+        upload_timeout   1m
+        store_dir        /var/fluent-bit/state/s3
+        s3_key_format    /cluster=lab/%Y/%m/%d/%H/$TAG[4]-%M%S-$UUID.gz
+        Retry_Limit      10
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: fluent-bit
+  namespace: logging
+  labels:
+    app: fluent-bit
+spec:
+  selector:
+    matchLabels:
+      app: fluent-bit
+  template:
+    metadata:
+      labels:
+        app: fluent-bit
+    spec:
+      serviceAccountName: fluent-bit
+      tolerations:
+        - operator: Exists
+      containers:
+        - name: fluent-bit
+          image: fluent/fluent-bit:4.0.3
+          envFrom:
+            - secretRef:
+                name: s3-credentials
+          ports:
+            - name: http
+              containerPort: 2020
+          livenessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          volumeMounts:
+            - name: config
+              mountPath: /fluent-bit/etc/fluent-bit.conf
+              subPath: fluent-bit.conf
+            - name: varlog
+              mountPath: /var/log
+              readOnly: true
+            - name: state
+              mountPath: /var/fluent-bit/state
+      volumes:
+        - name: config
+          configMap:
+            name: fluent-bit-config
+        - name: varlog
+          hostPath:
+            path: /var/log
+        - name: state
+          hostPath:              # simpan offset bacaan & penimbal merentas restart pod
+            path: /var/fluent-bit/state
+            type: DirectoryOrCreate

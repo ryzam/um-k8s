@@ -1,0 +1,20 @@
+# Kluster k3d kedua untuk Rancher management server (Opsyen B sahaja).
+# Guna:  k3d cluster create --config k3d-rancher.yaml
+# Rancher didedahkan melalui Traefik (ingress terbina dalam k3s) pada port 443 laptop.
+apiVersion: k3d.io/v1alpha5
+kind: Simple
+metadata:
+  name: rancher                   # node: k3d-rancher-server-0, rangkaian Docker: k3d-rancher
+servers: 1
+agents: 0
+image: rancher/k3s:v1.33.1-k3s1   # semak support matrix Rancher sebelum menukar versi
+kubeAPI:
+  hostIP: "127.0.0.1"
+  hostPort: "6551"                # 6550 sudah diguna oleh kluster lab
+ports:
+  - port: 443:443                 # https://rancher.<IP-laptop>.sslip.io
+    nodeFilters: [loadbalancer]
+options:
+  kubeconfig:
+    updateDefaultKubeconfig: true
+    switchCurrentContext: false   # kekalkan context k3d-lab sebagai context semasa

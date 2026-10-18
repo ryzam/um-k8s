@@ -1,0 +1,46 @@
+# HPA v2 - CPU + memory, dengan polisi behavior.
+# Bila ada lebih daripada satu metrik, HPA kira desiredReplicas untuk SETIAP metrik
+# dan ambil nilai yang PALING TINGGI.
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: demo-app
+  namespace: demo
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: demo-app
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 50
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 70
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 0      # bertindak segera bila beban naik
+      selectPolicy: Max
+      policies:
+        - type: Percent
+          value: 100                     # boleh gandakan replicas ...
+          periodSeconds: 15
+        - type: Pods
+          value: 4                       # ... atau tambah 4 pod, ikut mana lebih besar
+          periodSeconds: 15
+    scaleDown:
+      stabilizationWindowSeconds: 120    # tunggu 2 minit beban rendah sebelum turun (default 300)
+      selectPolicy: Min
+      policies:
+        - type: Pods
+          value: 1                       # turun perlahan: 1 pod setiap 30 saat
+          periodSeconds: 30

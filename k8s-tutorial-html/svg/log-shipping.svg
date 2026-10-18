@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 250" role="img" aria-labelledby="lgt lgd"><title id="lgt">Log shipping ke storan luar</title><desc id="lgd">Fail log di setiap node dibaca oleh Fluent Bit DaemonSet, yang menambah metadata, membuang log /healthz, menimbal di disk, dan menghantar ke Loki untuk carian di Grafana serta ke S3 sebagai arkib .gz.</desc><style>svg{--d-zone:#f3f5f8;--d-zone2:#f8f6f1;--d-box:#ffffff;--d-line:#b9c2cf;--d-fg:#18202c;--d-muted:#5a6577;--d-acc:#2457c5;--d-accbg:#e6edfb;--d-warn:#b4540b;--d-warnbg:#fbeee2;--d-ok:#1f7a4d;--d-okbg:#e3f3ea;--d-arrow:#6b7688;--d-grid:#e1e5eb;--d-font:'IBM Plex Sans',system-ui,sans-serif;--d-mono:'IBM Plex Mono',ui-monospace,monospace}@media (prefers-color-scheme:dark){svg{--d-zone:#1a212c;--d-zone2:#211f1b;--d-box:#121821;--d-line:#3c4757;--d-fg:#e6eaf0;--d-muted:#9aa5b6;--d-acc:#7ea4ff;--d-accbg:#1d2a45;--d-warn:#f0a35e;--d-warnbg:#3a2717;--d-ok:#5fcf93;--d-okbg:#16301f;--d-arrow:#8b96a8;--d-grid:#2a3340}}
+.zone{fill:var(--d-zone);stroke:var(--d-line);stroke-width:1.2}
+.zone2{fill:var(--d-zone2);stroke:var(--d-line);stroke-width:1.2;stroke-dasharray:6 4}
+.box{fill:var(--d-box);stroke:var(--d-line);stroke-width:1.2}
+.acc{fill:var(--d-accbg);stroke:var(--d-acc);stroke-width:1.4}
+.warn{fill:var(--d-warnbg);stroke:var(--d-warn);stroke-width:1.4}
+.okb{fill:var(--d-okbg);stroke:var(--d-ok);stroke-width:1.4}
+.solid{fill:var(--d-acc)}
+.t{fill:var(--d-fg);font-size:14px}
+.th{fill:var(--d-fg);font-size:14px;font-weight:600}
+.ts{fill:var(--d-muted);font-size:12px}
+.tl{fill:var(--d-muted);font-size:11px;letter-spacing:.06em;text-transform:uppercase;font-weight:600}
+.ta{fill:var(--d-acc);font-size:12px;font-weight:600}
+.tw{fill:var(--d-warn);font-size:12px;font-weight:600}
+.m{font-family:var(--d-mono)}
+.arr{fill:none;stroke:var(--d-arrow);stroke-width:1.6}
+.arra{fill:none;stroke:var(--d-acc);stroke-width:1.8}
+.dash{stroke-dasharray:5 4}
+.grid{stroke:var(--d-grid);stroke-width:1}
+.area{fill:var(--d-accbg);stroke:var(--d-acc);stroke-width:2}
+.head{fill:var(--d-arrow)}
+.heada{fill:var(--d-acc)}
+text{font-family:var(--d-font)}
+</style><defs><marker id="lgh" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="head"/></marker><marker id="lga" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="heada"/></marker></defs><rect x="20" y="30" width="470" height="200" rx="12" class="zone"/><text x="36" y="56" class="th" text-anchor="start">Setiap node</text><rect x="40" y="92" width="180" height="60" rx="8" class="box"/><text x="130.0" y="119.0" class="ts m" text-anchor="middle">/var/log/containers</text><text x="130.0" y="137.0" class="ts" text-anchor="middle">*.log</text><rect x="260" y="72" width="210" height="120" rx="8" class="acc"/><text x="276" y="98" class="th" text-anchor="start">Fluent Bit</text><text x="276" y="116" class="ts m" text-anchor="start">DaemonSet</text><text x="276" y="140" class="ts" text-anchor="start">+ metadata K8s</text><text x="276" y="158" class="ts" text-anchor="start">− log /healthz</text><text x="276" y="176" class="ts" text-anchor="start">penimbal disk</text><path d="M220,122 H258" class="arr" marker-end="url(#lgh)"/><rect x="540" y="30" width="340" height="200" rx="12" class="zone2"/><text x="556" y="56" class="th" text-anchor="start">Luar kluster</text><rect x="570" y="74" width="140" height="52" rx="8" class="box"/><text x="640.0" y="97.0" class="th" text-anchor="middle">Loki</text><text x="640.0" y="115.0" class="ts" text-anchor="middle">cari di Grafana</text><rect x="730" y="74" width="130" height="52" rx="8" class="box"/><text x="795.0" y="97.0" class="th" text-anchor="middle">Grafana</text><text x="795.0" y="115.0" class="ts" text-anchor="middle">LogQL</text><path d="M730,100 H712" class="arr" marker-end="url(#lgh)"/><rect x="570" y="154" width="290" height="52" rx="8" class="box"/><text x="715.0" y="177.0" class="th" text-anchor="middle">S3 (SeaweedFS)</text><text x="715.0" y="195.0" class="ts" text-anchor="middle">arkib .gz: cluster=lab/YYYY/MM/DD/HH/…</text><path d="M470,110 H568" class="arra" marker-end="url(#lga)"/><path d="M470,170 H568" class="arra" marker-end="url(#lga)"/></svg>

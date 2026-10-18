@@ -1,0 +1,156 @@
+# Dua servis demo tracing dalam namespace demo: kedai -> inventori.
+# Kod: ../app/configmap.yaml (app_otel.py). Image sama seperti demo-app (python:3.12-slim);
+# SDK OpenTelemetry dipasang oleh initContainer dengan pip ke volume /deps, jadi pod perlukan
+# akses Internet ke pypi.org semasa start (lihat README jika Wi-Fi bengkel perlahan).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: inventori
+  namespace: demo
+  labels:
+    app: inventori
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: inventori
+  template:
+    metadata:
+      labels:
+        app: inventori
+    spec:
+      initContainers:
+        - name: pasang-otel-sdk
+          image: python:3.12-slim
+          command: ["pip", "install", "--quiet", "--no-cache-dir", "--target", "/deps",
+                    "opentelemetry-sdk==1.45.1", "opentelemetry-exporter-otlp-proto-http==1.45.1"]
+          resources:
+            requests: { cpu: 50m, memory: 64Mi }
+            limits: { cpu: 500m, memory: 256Mi }
+          volumeMounts:
+            - name: deps
+              mountPath: /deps
+      containers:
+        - name: app
+          image: python:3.12-slim
+          command: ["python", "-u", "/app/app_otel.py"]
+          env:
+            - name: ROLE
+              value: inventori
+            - name: OTEL_SERVICE_NAME
+              value: inventori
+            # Service Collector dengan internalTrafficPolicy: Local -> pod Collector pada node yang sama
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://otel-collector.monitoring.svc:4318
+            - name: PYTHONPATH
+              value: /deps
+            - name: LAMBAT_RATE        # 10% request: pangkalan data "lambat" 800 ms
+              value: "0.1"
+            - name: GAGAL_RATE         # 2% request: HTTP 500
+              value: "0.02"
+          ports:
+            - name: http
+              containerPort: 8080
+          readinessProbe:
+            httpGet: { path: /healthz, port: http }
+            periodSeconds: 5
+          resources:
+            requests: { cpu: 50m, memory: 64Mi }
+            limits: { cpu: 500m, memory: 256Mi }
+          volumeMounts:
+            - { name: code, mountPath: /app }
+            - { name: deps, mountPath: /deps }
+      volumes:
+        - name: code
+          configMap:
+            name: app-otel-code
+        - name: deps
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: inventori
+  namespace: demo
+spec:
+  selector:
+    app: inventori
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kedai
+  namespace: demo
+  labels:
+    app: kedai
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kedai
+  template:
+    metadata:
+      labels:
+        app: kedai
+    spec:
+      initContainers:
+        - name: pasang-otel-sdk
+          image: python:3.12-slim
+          command: ["pip", "install", "--quiet", "--no-cache-dir", "--target", "/deps",
+                    "opentelemetry-sdk==1.45.1", "opentelemetry-exporter-otlp-proto-http==1.45.1"]
+          resources:
+            requests: { cpu: 50m, memory: 64Mi }
+            limits: { cpu: 500m, memory: 256Mi }
+          volumeMounts:
+            - name: deps
+              mountPath: /deps
+      containers:
+        - name: app
+          image: python:3.12-slim
+          command: ["python", "-u", "/app/app_otel.py"]
+          env:
+            - name: ROLE
+              value: kedai
+            - name: OTEL_SERVICE_NAME
+              value: kedai
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://otel-collector.monitoring.svc:4318
+            - name: PYTHONPATH
+              value: /deps
+            - name: INVENTORI_URL
+              value: http://inventori:8080
+          ports:
+            - name: http
+              containerPort: 8080
+          readinessProbe:
+            httpGet: { path: /healthz, port: http }
+            periodSeconds: 5
+          resources:
+            requests: { cpu: 50m, memory: 64Mi }
+            limits: { cpu: 500m, memory: 256Mi }
+          volumeMounts:
+            - { name: code, mountPath: /app }
+            - { name: deps, mountPath: /deps }
+      volumes:
+        - name: code
+          configMap:
+            name: app-otel-code
+        - name: deps
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kedai
+  namespace: demo
+spec:
+  selector:
+    app: kedai
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http

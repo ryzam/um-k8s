@@ -1,0 +1,55 @@
+# ScaledObject: KEDA skala demo-app berdasarkan KADAR REQUEST (RPS) daripada Prometheus luar
+# Modul 3, bukan CPU. KEDA mencipta HPA "keda-hpa-demo-app" di belakang tabir dengan metrik
+# External "s0-prometheus"; HPA controller yang sama seperti Modul 1 yang melakukan scaling.
+#
+# Prasyarat:
+#   - HPA demo-app dari Modul 1 DIBUANG dahulu (satu Deployment hanya boleh ada satu HPA):
+#       kubectl -n demo delete hpa demo-app --ignore-not-found
+#   - Stack luar Modul 3 berjalan dalam Pilihan A (job kubernetes-pods scrape demo-app).
+#
+# Nama hos "prometheus" ialah container Docker pada rangkaian k3d-lab. Jika operator KEDA tidak
+# dapat menyelesaikannya (log: "no such host"), gantikan dengan IP:
+#   docker inspect monitoring-luar-prometheus-1 -f '{{(index .NetworkSettings.Networks "k3d-lab").IPAddress}}'
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: demo-app
+  namespace: demo
+spec:
+  scaleTargetRef:
+    name: demo-app               # Deployment (apiVersion apps/v1 secara default)
+  minReplicaCount: 1             # 0 = scale-to-zero; lihat Makmal 6.5 kenapa bukan untuk app ini
+  maxReplicaCount: 10
+  pollingInterval: 15            # saat; kekerapan KEDA query Prometheus untuk keputusan 0 <-> 1
+  cooldownPeriod: 300            # saat; hanya digunakan bila turun ke 0 (minReplicaCount: 0)
+  # Jika query gagal 3 kali berturut-turut (Prometheus mati, rangkaian putus), tetapkan 3 replicas
+  # dan bukannya membeku pada nilai terakhir. Lihat Makmal 6.4.
+  fallback:
+    failureThreshold: 3
+    replicas: 3
+  advanced:
+    horizontalPodAutoscalerConfig:
+      # Sama seperti behavior HPA Makmal 1.6 (Modul 1), supaya perbandingan adil
+      behavior:
+        scaleUp:
+          stabilizationWindowSeconds: 0
+          selectPolicy: Max
+          policies:
+            - { type: Percent, value: 100, periodSeconds: 15 }
+            - { type: Pods, value: 4, periodSeconds: 15 }
+        scaleDown:
+          stabilizationWindowSeconds: 120
+          selectPolicy: Min
+          policies:
+            - { type: Pods, value: 1, periodSeconds: 30 }
+  triggers:
+    - type: prometheus
+      metadata:
+        serverAddress: http://prometheus:9090
+        # Mesti mengembalikan SATU nilai (guna sum). Jumlah RPS endpoint /cpu untuk SEMUA pod.
+        query: sum(rate(demo_http_requests_total{namespace="demo", app="demo-app", path="/cpu"}[1m]))
+        # metricType default AverageValue: desiredReplicas = ceil(nilai query / threshold)
+        # 5 RPS setiap pod. Untuk load.js (~19 RPS) -> 4 pod.
+        threshold: "5"
+        # Untuk keputusan 0 <-> 1 sahaja (bila minReplicaCount: 0)
+        activationThreshold: "1"

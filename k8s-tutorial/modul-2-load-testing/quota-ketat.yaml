@@ -1,0 +1,14 @@
+# Makmal 2.5: "bottleneck tersembunyi". Quota requests.cpu 500m = maksimum 5 pod demo-app
+# (100m setiap satu), walaupun HPA maxReplicas = 10.
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: demo-quota
+  namespace: demo
+spec:
+  hard:
+    requests.cpu: 500m
+    requests.memory: 2Gi
+    limits.cpu: "6"
+    limits.memory: 6Gi
+    pods: "20"

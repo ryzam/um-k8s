@@ -1,0 +1,25 @@
+# LimitRange = PERATURAN namespace, bukan resources untuk satu app.
+# Ia diperiksa oleh API server setiap kali pod dicipta dalam namespace demo:
+#   - container TANPA resources -> nilai default di bawah disuntik secara automatik
+#   - container DENGAN resources -> nilai sendiri dikekalkan, tetapi mesti dalam julat min..max
+# Pod yang sudah berjalan tidak terjejas; peraturan hanya untuk pod baharu.
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: default-resources
+  namespace: demo
+spec:
+  limits:
+    - type: Container
+      defaultRequest:      # requests yang diberi jika container tidak menyatakan requests
+        cpu: 100m
+        memory: 64Mi
+      default:             # limits yang diberi jika container tidak menyatakan limits
+        cpu: 500m
+        memory: 256Mi
+      min:                 # requests lebih kecil daripada ini -> pod ditolak
+        cpu: 50m
+        memory: 32Mi
+      max:                 # limits lebih besar daripada ini -> pod ditolak (elak pod "rakus")
+        cpu: "2"
+        memory: 1Gi

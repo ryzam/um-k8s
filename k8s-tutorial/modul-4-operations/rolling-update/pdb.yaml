@@ -1,0 +1,13 @@
+# PodDisruptionBudget: had bilangan pod yang boleh "diganggu secara sukarela"
+# (kubectl drain, upgrade node, Cluster Autoscaler scale-down) pada satu masa.
+# TIDAK melindungi daripada gangguan tidak sukarela (node crash, OOM).
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: demo-app
+  namespace: demo
+spec:
+  minAvailable: 1        # alternatif: maxUnavailable: 1 (lebih sesuai bila replicas berubah oleh HPA)
+  selector:
+    matchLabels:
+      app: demo-app

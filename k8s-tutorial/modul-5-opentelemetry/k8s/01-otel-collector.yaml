@@ -1,0 +1,282 @@
+# OpenTelemetry Collector sebagai DaemonSet (satu pod setiap node), menggantikan Prometheus Agent
+# Pilihan B Modul 3 (04-pilihan-b-prometheus-agent.yaml). Dua pipeline:
+#   metrics: scrape node-exporter, cAdvisor, kube-state-metrics dan pod beranotasi PADA NODE SENDIRI
+#            -> prometheus_remote_write ke Prometheus luar (dashboard dan alert Modul 3 kekal sama)
+#   traces:  terima OTLP daripada aplikasi -> tokok atribut k8s.* -> Tempo luar
+#
+# Kenapa "pada node sendiri"? Setiap pod Collector hanya scrape sasaran pada node ia berjalan
+# (field selector spec.nodeName / metadata.name = K8S_NODE_NAME). Tanpa ini, 3 pod DaemonSet akan
+# scrape sasaran yang sama 3 kali.
+#
+# Prasyarat: Makmal 3.1 (kube-state-metrics, node-exporter) dan stack luar Modul 3 + Tempo
+# (external/docker-compose.yml modul ini) berjalan. Jika Prometheus Agent Pilihan B dipasang, buang dahulu:
+#   kubectl delete -f ../modul-3-monitoring/k8s/04-pilihan-b-prometheus-agent.yaml
+# Nama hos "prometheus" dan "tempo" ialah container Docker pada rangkaian k3d-lab. Jika tidak dapat
+# diselesaikan dari pod, gantikan dengan IP:
+#   docker inspect monitoring-luar-prometheus-1 -f '{{(index .NetworkSettings.Networks "k3d-lab").IPAddress}}'
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: otel-collector
+  namespace: monitoring
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: otel-collector
+rules:
+  # service discovery + scrape kubelet/cAdvisor terus (port 10250)
+  - apiGroups: [""]
+    resources: [nodes, nodes/metrics, nodes/proxy, pods, namespaces, services, endpoints]
+    verbs: [get, list, watch]
+  # processor k8s_attributes: cari Deployment pemilik pod melalui ReplicaSet
+  - apiGroups: [apps]
+    resources: [replicasets]
+    verbs: [get, list, watch]
+  - nonResourceURLs: [/metrics, /metrics/cadvisor]
+    verbs: [get]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: otel-collector
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: otel-collector
+subjects:
+  - kind: ServiceAccount
+    name: otel-collector
+    namespace: monitoring
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: otel-collector-config
+  namespace: monitoring
+data:
+  # Dalam fail ini, ${env:NAMA} dikembangkan oleh Collector. Tanda $ yang perlu sampai kepada
+  # Prometheus (cth $1 dalam relabel) mesti ditulis $$1.
+  config.yaml: |
+    extensions:
+      health_check:
+        endpoint: 0.0.0.0:13133
+
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+          http:
+            endpoint: 0.0.0.0:4318
+      prometheus:
+        config:
+          global:
+            scrape_interval: 15s
+          scrape_configs:
+            - job_name: node-exporter
+              kubernetes_sd_configs:
+                - role: node
+                  selectors:
+                    - role: node
+                      field: metadata.name=${env:K8S_NODE_NAME}
+              relabel_configs:
+                - source_labels: [__address__]
+                  regex: (.+):\d+
+                  target_label: __address__
+                  replacement: $$1:9100
+                - source_labels: [__meta_kubernetes_node_name]
+                  target_label: node
+            - job_name: kubernetes-cadvisor
+              scheme: https
+              metrics_path: /metrics/cadvisor
+              authorization:
+                credentials_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+              tls_config:
+                ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+                insecure_skip_verify: true     # sijil kubelet self-signed di k3d (lab sahaja)
+              kubernetes_sd_configs:
+                - role: node
+                  selectors:
+                    - role: node
+                      field: metadata.name=${env:K8S_NODE_NAME}
+              relabel_configs:
+                - source_labels: [__meta_kubernetes_node_name]
+                  target_label: node
+              metric_relabel_configs:
+                - source_labels: [container]
+                  regex: ^$|POD
+                  action: drop
+            # kube-state-metrics ialah satu pod; hanya pod Collector pada node yang sama akan menemuinya
+            - job_name: kube-state-metrics
+              honor_labels: true
+              kubernetes_sd_configs:
+                - role: pod
+                  namespaces: { names: [monitoring] }
+                  selectors:
+                    - role: pod
+                      field: spec.nodeName=${env:K8S_NODE_NAME}
+              relabel_configs:
+                - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_name, __meta_kubernetes_pod_container_port_name]
+                  regex: kube-state-metrics;http-metrics
+                  action: keep
+            - job_name: kubernetes-pods
+              kubernetes_sd_configs:
+                - role: pod
+                  selectors:
+                    - role: pod
+                      field: spec.nodeName=${env:K8S_NODE_NAME}
+              relabel_configs:
+                - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+                  regex: "true"
+                  action: keep
+                - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+                  regex: (.+)
+                  target_label: __metrics_path__
+                - source_labels: [__meta_kubernetes_pod_ip, __meta_kubernetes_pod_annotation_prometheus_io_port]
+                  regex: (.+);(.+)
+                  target_label: __address__
+                  replacement: $$1:$$2
+                - source_labels: [__meta_kubernetes_namespace]
+                  target_label: namespace
+                - source_labels: [__meta_kubernetes_pod_name]
+                  target_label: pod
+                - source_labels: [__meta_kubernetes_pod_label_app]
+                  target_label: app
+                - source_labels: [__meta_kubernetes_pod_label_version]
+                  target_label: version
+
+    processors:
+      # Lindungi node: tolak data baharu sebelum pod mencapai limits memori (elak OOMKilled)
+      memory_limiter:
+        check_interval: 1s
+        limit_percentage: 80
+        spike_limit_percentage: 25
+      # Tokok atribut Kubernetes pada span: k8s.namespace.name, k8s.pod.name, k8s.deployment.name, ...
+      # Pod dikenal pasti melalui IP sambungan masuk, jadi aplikasi tidak perlu tahu nama podnya.
+      k8s_attributes:
+        filter:
+          node_from_env_var: K8S_NODE_NAME   # pantau pod pada node ini sahaja (jimat memori)
+        extract:
+          metadata: [k8s.namespace.name, k8s.pod.name, k8s.deployment.name, k8s.node.name]
+      resource:
+        attributes:
+          - key: k8s.cluster.name
+            value: lab
+            action: upsert
+      batch: {}
+
+    exporters:
+      prometheus_remote_write:
+        endpoint: http://prometheus:9090/api/v1/write
+        external_labels:
+          cluster: lab                    # sama seperti external_labels Prometheus Agent
+      otlp_grpc/tempo:
+        endpoint: tempo:4317
+        tls:
+          insecure: true                  # makmal sahaja; di production guna TLS
+      debug:
+        verbosity: basic                  # ringkasan dalam log pod: kubectl logs ds/otel-collector
+
+    service:
+      extensions: [health_check]
+      telemetry:
+        metrics:
+          readers:
+            - pull:
+                exporter:
+                  prometheus:
+                    host: 0.0.0.0
+                    port: 8888            # metrik Collector sendiri, di-scrape oleh job kubernetes-pods
+      pipelines:
+        metrics:
+          receivers: [prometheus]
+          processors: [memory_limiter, batch]
+          exporters: [prometheus_remote_write]
+        traces:
+          receivers: [otlp]
+          processors: [memory_limiter, k8s_attributes, resource, batch]
+          exporters: [otlp_grpc/tempo, debug]
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: otel-collector
+  namespace: monitoring
+  labels:
+    app: otel-collector
+spec:
+  selector:
+    matchLabels:
+      app: otel-collector
+  template:
+    metadata:
+      labels:
+        app: otel-collector
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8888"
+        prometheus.io/path: /metrics
+    spec:
+      serviceAccountName: otel-collector
+      tolerations:
+        - operator: Exists              # juga pada control-plane, untuk node-exporter & cAdvisor node itu
+      containers:
+        - name: otel-collector
+          image: otel/opentelemetry-collector-contrib:0.163.1
+          args: ["--config=/conf/config.yaml"]
+          env:
+            - name: K8S_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: GOMEMLIMIT          # bantu Go GC kekal di bawah limits memori
+              value: 200MiB
+          ports:
+            - name: otlp-grpc
+              containerPort: 4317
+            - name: otlp-http
+              containerPort: 4318
+            - name: metrics
+              containerPort: 8888
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 13133
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 13133
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          volumeMounts:
+            - name: config
+              mountPath: /conf
+      volumes:
+        - name: config
+          configMap:
+            name: otel-collector-config
+---
+# Aplikasi menghantar OTLP ke Service ini. internalTrafficPolicy: Local = trafik hanya ke pod
+# Collector pada node yang sama dengan aplikasi (tiada lompatan rangkaian antara node).
+apiVersion: v1
+kind: Service
+metadata:
+  name: otel-collector
+  namespace: monitoring
+spec:
+  selector:
+    app: otel-collector
+  internalTrafficPolicy: Local
+  ports:
+    - name: otlp-grpc
+      port: 4317
+      targetPort: otlp-grpc
+    - name: otlp-http
+      port: 4318
+      targetPort: otlp-http

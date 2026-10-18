@@ -1,0 +1,29 @@
+# Apply SELEPAS 03-batch-keutamaan-rendah.yaml memenuhi kluster.
+# Scheduler akan preempt (usir) pod batch untuk memberi ruang kepada pod ini.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kritikal
+  namespace: ops-lab
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: kritikal
+  template:
+    metadata:
+      labels:
+        app: kritikal
+    spec:
+      priorityClassName: kritikal
+      containers:
+        - name: kritikal
+          image: busybox:1.36
+          command: ["sleep", "infinity"]
+          resources:
+            requests:
+              cpu: "1"
+              memory: 32Mi
+            limits:
+              cpu: "1"
+              memory: 32Mi

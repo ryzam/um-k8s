@@ -1,0 +1,35 @@
+# KES 2: "Pod asyik restart"
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kes-2-config
+  namespace: troubleshoot
+data:
+  DB_HOST: postgres.troubleshoot.svc
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kes-2-worker
+  namespace: troubleshoot
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: kes-2-worker }
+  template:
+    metadata:
+      labels: { app: kes-2-worker }
+    spec:
+      containers:
+        - name: worker
+          image: busybox:1.36
+          envFrom:
+            - configMapRef:
+                name: kes-2-config
+          command:
+            - sh
+            - -c
+            - |
+              echo "Menyambung ke $DB_HOST:$DB_PORT ..."
+              if [ -z "$DB_PORT" ]; then echo "FATAL: DB_PORT tidak ditetapkan" >&2; exit 1; fi
+              echo "OK"; sleep 3600

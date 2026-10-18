@@ -1,0 +1,14 @@
+# Siling jumlah untuk seluruh namespace. Ini juga had "tersembunyi" untuk HPA:
+# jika quota habis, HPA mahu scale tetapi pod baharu ditolak (lihat Modul 2).
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: demo-quota
+  namespace: demo
+spec:
+  hard:
+    requests.cpu: "2"
+    requests.memory: 2Gi
+    limits.cpu: "6"
+    limits.memory: 6Gi
+    pods: "20"

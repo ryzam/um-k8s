@@ -1,0 +1,7 @@
+# Nilai Helm untuk Rancher dalam makmal: satu replica, sijil self-signed (dijana oleh cert-manager).
+# hostname TIDAK diletak di sini kerana ia bergantung pada IP laptop; beri melalui --set hostname=$RANCHER_HOST.
+replicas: 1
+bootstrapPassword: bengkel-rancher-123   # kata laluan log masuk pertama; UI akan minta anda menukarnya
+ingress:
+  tls:
+    source: rancher                      # CA self-signed Rancher. Production: letsEncrypt atau secret sijil syarikat

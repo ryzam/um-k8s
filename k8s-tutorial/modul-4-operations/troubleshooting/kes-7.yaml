@@ -1,0 +1,28 @@
+# KES 7: "App start perlahan, kemudian di-restart berulang kali walaupun app OK"
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kes-7-java
+  namespace: troubleshoot
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: kes-7-java }
+  template:
+    metadata:
+      labels: { app: kes-7-java }
+    spec:
+      containers:
+        - name: app
+          image: python:3.12-slim
+          # Simulasi app yang ambil 40 saat untuk "warm up" sebelum buka port 8080
+          command: ["sh", "-c", "echo warming up...; sleep 40; echo ready; python -m http.server 8080"]
+          ports:
+            - containerPort: 8080
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            failureThreshold: 3

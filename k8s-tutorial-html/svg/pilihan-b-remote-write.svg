@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 220" role="img" aria-labelledby="pbt pbd"><title id="pbt">Pilihan B: Prometheus Agent dan remote_write</title><desc id="pbd">Prometheus Agent dalam kluster scrape exporter, simpan WAL, dan remote_write keluar ke Prometheus luar melalui firewall yang hanya membenarkan trafik keluar.</desc><style>svg{--d-zone:#f3f5f8;--d-zone2:#f8f6f1;--d-box:#ffffff;--d-line:#b9c2cf;--d-fg:#18202c;--d-muted:#5a6577;--d-acc:#2457c5;--d-accbg:#e6edfb;--d-warn:#b4540b;--d-warnbg:#fbeee2;--d-ok:#1f7a4d;--d-okbg:#e3f3ea;--d-arrow:#6b7688;--d-grid:#e1e5eb;--d-font:'IBM Plex Sans',system-ui,sans-serif;--d-mono:'IBM Plex Mono',ui-monospace,monospace}@media (prefers-color-scheme:dark){svg{--d-zone:#1a212c;--d-zone2:#211f1b;--d-box:#121821;--d-line:#3c4757;--d-fg:#e6eaf0;--d-muted:#9aa5b6;--d-acc:#7ea4ff;--d-accbg:#1d2a45;--d-warn:#f0a35e;--d-warnbg:#3a2717;--d-ok:#5fcf93;--d-okbg:#16301f;--d-arrow:#8b96a8;--d-grid:#2a3340}}
+.zone{fill:var(--d-zone);stroke:var(--d-line);stroke-width:1.2}
+.zone2{fill:var(--d-zone2);stroke:var(--d-line);stroke-width:1.2;stroke-dasharray:6 4}
+.box{fill:var(--d-box);stroke:var(--d-line);stroke-width:1.2}
+.acc{fill:var(--d-accbg);stroke:var(--d-acc);stroke-width:1.4}
+.warn{fill:var(--d-warnbg);stroke:var(--d-warn);stroke-width:1.4}
+.okb{fill:var(--d-okbg);stroke:var(--d-ok);stroke-width:1.4}
+.solid{fill:var(--d-acc)}
+.t{fill:var(--d-fg);font-size:14px}
+.th{fill:var(--d-fg);font-size:14px;font-weight:600}
+.ts{fill:var(--d-muted);font-size:12px}
+.tl{fill:var(--d-muted);font-size:11px;letter-spacing:.06em;text-transform:uppercase;font-weight:600}
+.ta{fill:var(--d-acc);font-size:12px;font-weight:600}
+.tw{fill:var(--d-warn);font-size:12px;font-weight:600}
+.m{font-family:var(--d-mono)}
+.arr{fill:none;stroke:var(--d-arrow);stroke-width:1.6}
+.arra{fill:none;stroke:var(--d-acc);stroke-width:1.8}
+.dash{stroke-dasharray:5 4}
+.grid{stroke:var(--d-grid);stroke-width:1}
+.area{fill:var(--d-accbg);stroke:var(--d-acc);stroke-width:2}
+.head{fill:var(--d-arrow)}
+.heada{fill:var(--d-acc)}
+text{font-family:var(--d-font)}
+</style><defs><marker id="pbh" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="head"/></marker><marker id="pba" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="heada"/></marker></defs><rect x="560" y="30" width="320" height="170" rx="12" class="zone2"/><rect x="20" y="30" width="420" height="170" rx="12" class="zone"/><text x="36" y="56" class="th" text-anchor="start">Kluster</text><rect x="40" y="76" width="170" height="44" rx="8" class="box"/><text x="125.0" y="95.0" class="th" text-anchor="middle">Exporter</text><text x="125.0" y="113.0" class="ts" text-anchor="middle">ksm · node · cAdvisor</text><rect x="250" y="76" width="170" height="100" rx="8" class="acc"/><text x="335.0" y="123.0" class="th" text-anchor="middle">Prometheus Agent</text><text x="335.0" y="141.0" class="ts" text-anchor="middle">WAL bila rangkaian putus</text><path d="M210,98 H248" class="arr" marker-end="url(#pbh)"/><line x1="490" y1="20" x2="490" y2="210" class="arr dash"/><text x="484" y="214" class="tw" text-anchor="end">firewall: keluar sahaja</text><path d="M420,126 H600" class="arra" marker-end="url(#pba)"/><text x="510" y="116" class="ta m" text-anchor="middle">remote_write</text><text x="576" y="56" class="th" text-anchor="start">Luar kluster</text><rect x="602" y="100" width="120" height="52" rx="8" class="box"/><text x="662.0" y="123.0" class="th" text-anchor="middle">Prometheus</text><text x="662.0" y="141.0" class="ts" text-anchor="middle">terima tulis</text><rect x="744" y="100" width="120" height="52" rx="8" class="box"/><text x="804.0" y="131.0" class="th" text-anchor="middle">Grafana</text><path d="M744,126 H724" class="arr" marker-end="url(#pbh)"/></svg>
