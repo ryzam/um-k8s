@@ -133,7 +133,7 @@ Dalam Pilihan B, kluster yang menghantar metrik. Jika Prometheus luar terus scra
 
 ```bash
 cp prometheus/prometheus.yml prometheus/prometheus.yml.asal
-cp ../../modul-5-opentelemetry/external/prometheus-pilihan-b.yml prometheus/prometheus.yml
+cp prometheus/prometheus-pilihan-b.yml prometheus/prometheus.yml
 curl -X POST localhost:9090/-/reload
 ```
 

@@ -212,7 +212,7 @@ details:not(.file) summary{cursor:pointer;font-weight:600}
 <li class="nav-mod" data-m="rancher"><div class="nav-row"><a class="nav-top" href="#rancher"><span>Persediaan · Opsyen B: Rancher</span><span class="nav-count" data-m="rancher"></span></a><button type="button" class="nav-exp" aria-expanded="false" aria-label="Tunjuk sub-bahagian Persediaan · Opsyen B: Rancher"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></button></div><ul><li class="l2"><a href="#rancher-dua-cara-pasang-rancher">Dua cara pasang Rancher</a></li><li class="l2"><a href="#rancher-seni-bina">Seni bina</a></li><li class="l2"><a href="#rancher-keperluan-tambahan">Keperluan tambahan</a></li><li class="l2"><a href="#rancher-langkah-b1-tentukan-hostname-rancher">Langkah B1: Tentukan hostname Rancher</a></li><li class="l2"><a href="#rancher-cara-1-rancher-dalam-kluster-berasingan">Cara 1: Rancher dalam kluster berasingan</a></li><li class="l3"><a href="#rancher-langkah-b2-cipta-kluster-lab">Langkah B2: Cipta kluster lab</a></li><li class="l3"><a href="#rancher-langkah-b3-pra-muat-image-dan-uji-app-demo">Langkah B3: Pra-muat image dan uji app demo</a></li><li class="l3"><a href="#rancher-langkah-b4-cipta-kluster-rancher">Langkah B4: Cipta kluster rancher</a></li><li class="l3"><a href="#rancher-langkah-b5-pasang-cert-manager-dan-rancher-dengan-helm">Langkah B5: Pasang cert-manager dan Rancher dengan Helm</a></li><li class="l3"><a href="#rancher-langkah-b6-log-masuk">Langkah B6: Log masuk</a></li><li class="l3"><a href="#rancher-langkah-b7-import-kluster-lab-ke-rancher">Langkah B7: Import kluster lab ke Rancher</a></li><li class="l3"><a href="#rancher-langkah-b8-kubectl-melalui-rancher">Langkah B8: kubectl melalui Rancher</a></li><li class="l3"><a href="#rancher-semakan-siap-opsyen-b-cara-1">Semakan siap: Opsyen B cara 1</a></li><li class="l2"><a href="#rancher-cara-2-rancher-sekali-dalam-kluster-lab">Cara 2: Rancher sekali dalam kluster lab</a></li><li class="l3"><a href="#rancher-langkah-s2-cipta-kluster-lab-dengan-traefik-dan-port-443">Langkah S2: Cipta kluster lab dengan Traefik dan port 443</a></li><li class="l3"><a href="#rancher-langkah-s3-pra-muat-image-dan-uji-app-demo">Langkah S3: Pra-muat image dan uji app demo</a></li><li class="l3"><a href="#rancher-langkah-s4-pasang-cert-manager-dan-rancher-dalam-kluster-lab">Langkah S4: Pasang cert-manager dan Rancher dalam kluster lab</a></li><li class="l3"><a href="#rancher-langkah-s5-log-masuk">Langkah S5: Log masuk</a></li><li class="l3"><a href="#rancher-langkah-s6-kubectl-melalui-rancher">Langkah S6: kubectl melalui Rancher</a></li><li class="l3"><a href="#rancher-semakan-siap-opsyen-b-cara-2">Semakan siap: Opsyen B cara 2</a></li><li class="l2"><a href="#rancher-perubahan-dalam-modul">Perubahan dalam modul</a></li><li class="l2"><a href="#rancher-masalah-lazim">Masalah lazim</a></li><li class="l2"><a href="#rancher-reset-buang">Reset &amp; buang</a></li><li class="l2"><a href="#rancher-fail">Fail modul</a></li></ul></li>
 <li class="nav-mod" data-m="m1"><div class="nav-row"><a class="nav-top" href="#m1"><span>Modul 1 · HPA</span><span class="nav-count" data-m="m1"></span></a><button type="button" class="nav-exp" aria-expanded="false" aria-label="Tunjuk sub-bahagian Modul 1 · HPA"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></button></div><ul><li class="l2"><a href="#m1-jadual">Jadual</a></li><li class="l2"><a href="#m1-teori-ringkas">Teori ringkas</a></li><li class="l3"><a href="#m1-requests-vs-limits">Requests vs limits</a></li><li class="l3"><a href="#m1-qos-class-penting-untuk-eviction-di-modul-4">QoS class (penting untuk eviction di Modul 4)</a></li><li class="l3"><a href="#m1-cara-hpa-berfikir">Cara HPA berfikir</a></li><li class="l3"><a href="#m1-kawal-kadar-scale-behavior">Kawal kadar scale: behavior</a></li><li class="l2"><a href="#m1-makmal-1-1-apa-jadi-tanpa-requests">Makmal 1.1: Apa jadi tanpa requests?</a></li><li class="l2"><a href="#m1-makmal-1-2-tambah-requests-limits-limitrange-dan-resourcequota">Makmal 1.2: Tambah requests/limits, LimitRange dan ResourceQuota</a></li><li class="l2"><a href="#m1-makmal-1-3-pasang-metrics-server">Makmal 1.3: Pasang Metrics Server</a></li><li class="l2"><a href="#m1-makmal-1-4-cari-nilai-requests-dan-limits-sendiri">Makmal 1.4: Cari nilai requests dan limits sendiri</a></li><li class="l3"><a href="#m1-langkah-1-tetapkan-bilangan-pod">Langkah 1: Tetapkan bilangan pod</a></li><li class="l3"><a href="#m1-langkah-2-ukur-beban-normal">Langkah 2: Ukur beban normal</a></li><li class="l3"><a href="#m1-langkah-3-ukur-beban-puncak">Langkah 3: Ukur beban puncak</a></li><li class="l3"><a href="#m1-langkah-4-kira-nilai">Langkah 4: Kira nilai</a></li><li class="l3"><a href="#m1-langkah-5-pulihkan-hpa">Langkah 5: Pulihkan HPA</a></li><li class="l3"><a href="#m1-di-production-ukur-lebih-lama-dengan-alat-yang-betul">Di production: ukur lebih lama, dengan alat yang betul</a></li><li class="l2"><a href="#m1-makmal-1-5-hpa-v2-berasaskan-cpu">Makmal 1.5: HPA v2 berasaskan CPU</a></li><li class="l2"><a href="#m1-makmal-1-6-hpa-v2-cpu-memory-dengan-behavior">Makmal 1.6: HPA v2 CPU + memory dengan behavior</a></li><li class="l3"><a href="#m1-sahkan-behavior-dengan-beban-cpu">Sahkan behavior dengan beban CPU</a></li><li class="l2"><a href="#m1-makmal-1-7-cabaran-kawal-kadar-scale">Makmal 1.7 (cabaran): Kawal kadar scale</a></li><li class="l2"><a href="#m1-semakan-akhir-modul">Semakan akhir modul</a></li><li class="l2"><a href="#m1-rujukan">Rujukan</a></li><li class="l2"><a href="#m1-fail">Fail modul</a></li></ul></li>
 <li class="nav-mod" data-m="m2"><div class="nav-row"><a class="nav-top" href="#m2"><span>Modul 2 · Load testing</span><span class="nav-count" data-m="m2"></span></a><button type="button" class="nav-exp" aria-expanded="false" aria-label="Tunjuk sub-bahagian Modul 2 · Load testing"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></button></div><ul><li class="l2"><a href="#m2-jadual">Jadual</a></li><li class="l2"><a href="#m2-teori-ringkas">Teori ringkas</a></li><li class="l3"><a href="#m2-jenis-ujian">Jenis ujian</a></li><li class="l3"><a href="#m2-model-beban-closed-vs-open">Model beban: closed vs open</a></li><li class="l3"><a href="#m2-kenapa-hpa-tidak-serta-merta">Kenapa HPA tidak serta-merta?</a></li><li class="l3"><a href="#m2-slo-yang-kita-guna-dalam-makmal">SLO yang kita guna dalam makmal</a></li><li class="l3"><a href="#m2-anggaran-kapasiti-buat-sebelum-ujian">Anggaran kapasiti (buat SEBELUM ujian)</a></li><li class="l2"><a href="#m2-persediaan-terminal">Persediaan terminal</a></li><li class="l2"><a href="#m2-makmal-2-1-smoke-test">Makmal 2.1: Smoke test</a></li><li class="l2"><a href="#m2-makmal-2-2-load-test-dan-rakaman-garis-masa-hpa">Makmal 2.2: Load test dan rakaman garis masa HPA</a></li><li class="l2"><a href="#m2-makmal-2-3-stress-test-melebihi-kapasiti">Makmal 2.3: Stress test, melebihi kapasiti</a></li><li class="l2"><a href="#m2-makmal-2-4-spike-test-mengukur-kelewatan-hpa">Makmal 2.4: Spike test, mengukur kelewatan HPA</a></li><li class="l2"><a href="#m2-makmal-2-5-memburu-bottleneck">Makmal 2.5: Memburu bottleneck</a></li><li class="l3"><a href="#m2-a-cpu-throttling-pod-hidup-tetapi-lambat">A. CPU throttling (pod &quot;hidup&quot; tetapi lambat)</a></li><li class="l3"><a href="#m2-b-resourcequota-hpa-mahu-scale-tetapi-ditolak">B. ResourceQuota (HPA mahu scale, tetapi ditolak)</a></li><li class="l3"><a href="#m2-c-node-penuh-pod-pending">C. Node penuh (pod Pending)</a></li><li class="l3"><a href="#m2-d-oomkilled-memori-melebihi-limit">D. OOMKilled (memori melebihi limit)</a></li><li class="l3"><a href="#m2-ringkasan-bottleneck">Ringkasan bottleneck</a></li><li class="l2"><a href="#m2-makmal-2-6-locust-alternatif-dan-k6-dalam-kluster">Makmal 2.6: Locust (alternatif) dan k6 dalam kluster</a></li><li class="l3"><a href="#m2-locust-dengan-ui-web">Locust dengan UI web</a></li><li class="l3"><a href="#m2-k6-di-dalam-kluster">k6 di dalam kluster</a></li><li class="l3"><a href="#m2-bagaimana-dengan-jmeter">Bagaimana dengan JMeter?</a></li><li class="l2"><a href="#m2-templat-laporan-ujian">Templat laporan ujian</a></li><li class="l2"><a href="#m2-semakan-akhir-modul">Semakan akhir modul</a></li><li class="l2"><a href="#m2-rujukan">Rujukan</a></li><li class="l2"><a href="#m2-fail">Fail modul</a></li></ul></li>
-<li class="nav-mod" data-m="m3"><div class="nav-row"><a class="nav-top" href="#m3"><span>Modul 3 · Monitoring</span><span class="nav-count" data-m="m3"></span></a><button type="button" class="nav-exp" aria-expanded="false" aria-label="Tunjuk sub-bahagian Modul 3 · Monitoring"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></button></div><ul><li class="l2"><a href="#m3-jadual">Jadual</a></li><li class="l2"><a href="#m3-teori-ringkas">Teori ringkas</a></li><li class="l3"><a href="#m3-tiga-sumber-metrik-utama">Tiga sumber metrik utama</a></li><li class="l3"><a href="#m3-prometheus-vs-grafana-siapa-buat-apa">Prometheus vs Grafana: siapa buat apa</a></li><li class="l3"><a href="#m3-cara-mereka-bentuk-dashboard">Cara mereka bentuk dashboard</a></li><li class="l3"><a href="#m3-seni-bina-makmal-pilihan-a-prometheus-luar-scrape-terus">Seni bina makmal (Pilihan A: Prometheus luar scrape terus)</a></li><li class="l3"><a href="#m3-pilihan-b-prometheus-agent-dalam-kluster-remote-write">Pilihan B: Prometheus Agent dalam kluster + remote_write</a></li><li class="l3"><a href="#m3-nota-apa-itu-opentelemetry-dan-bila-perlu">Nota: Apa itu OpenTelemetry dan bila perlu</a></li><li class="l2"><a href="#m3-makmal-3-1-pasang-kube-state-metrics-dan-node-exporter">Makmal 3.1: Pasang kube-state-metrics dan node-exporter</a></li><li class="l2"><a href="#m3-makmal-3-2-serviceaccount-dan-rbac-untuk-prometheus-luar">Makmal 3.2: ServiceAccount dan RBAC untuk Prometheus luar</a></li><li class="l2"><a href="#m3-makmal-3-3-naikkan-stack-monitoring-luar">Makmal 3.3: Naikkan stack monitoring luar</a></li><li class="l2"><a href="#m3-makmal-3-4-dashboard-grafana">Makmal 3.4: Dashboard Grafana</a></li><li class="l3"><a href="#m3-a-dashboard-yang-disediakan">A. Dashboard yang disediakan</a></li><li class="l3"><a href="#m3-b-bina-panel-sendiri">B. Bina panel sendiri</a></li><li class="l3"><a href="#m3-c-dashboard-komuniti-import">C. Dashboard komuniti (import)</a></li><li class="l2"><a href="#m3-makmal-3-5-peraturan-alert-prometheus-alertmanager">Makmal 3.5: Peraturan alert Prometheus + Alertmanager</a></li><li class="l3"><a href="#m3-penghalaan-alertmanager">Penghalaan Alertmanager</a></li><li class="l2"><a href="#m3-makmal-3-6-sambung-slack-teams-dan-email-sebenar">Makmal 3.6: Sambung Slack, Teams dan Email sebenar</a></li><li class="l3"><a href="#m3-slack">Slack</a></li><li class="l3"><a href="#m3-microsoft-teams">Microsoft Teams</a></li><li class="l3"><a href="#m3-email-sebenar-contoh-office-365-gmail">Email sebenar (contoh Office 365 / Gmail)</a></li><li class="l3"><a href="#m3-alternatif-grafana-managed-alerting">Alternatif: Grafana-managed alerting</a></li><li class="l2"><a href="#m3-makmal-3-7-cetuskan-alert-sebenar">Makmal 3.7: Cetuskan alert sebenar</a></li><li class="l2"><a href="#m3-semakan-akhir-modul">Semakan akhir modul</a></li><li class="l3"><a href="#m3-hentikan-dan-hidupkan-semula-stack-monitoring">Hentikan dan hidupkan semula stack monitoring</a></li><li class="l2"><a href="#m3-rujukan">Rujukan</a></li><li class="l2"><a href="#m3-fail">Fail modul</a></li></ul></li>
+<li class="nav-mod" data-m="m3"><div class="nav-row"><a class="nav-top" href="#m3"><span>Modul 3 · Monitoring</span><span class="nav-count" data-m="m3"></span></a><button type="button" class="nav-exp" aria-expanded="false" aria-label="Tunjuk sub-bahagian Modul 3 · Monitoring"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></button></div><ul><li class="l2"><a href="#m3-jadual">Jadual</a></li><li class="l2"><a href="#m3-teori-ringkas">Teori ringkas</a></li><li class="l3"><a href="#m3-tiga-sumber-metrik-utama">Tiga sumber metrik utama</a></li><li class="l3"><a href="#m3-prometheus-vs-grafana-siapa-buat-apa">Prometheus vs Grafana: siapa buat apa</a></li><li class="l3"><a href="#m3-cara-mereka-bentuk-dashboard">Cara mereka bentuk dashboard</a></li><li class="l3"><a href="#m3-seni-bina-makmal-pilihan-a-prometheus-luar-scrape-terus">Seni bina makmal (Pilihan A: Prometheus luar scrape terus)</a></li><li class="l3"><a href="#m3-pilihan-b-prometheus-agent-dalam-kluster-remote-write">Pilihan B: Prometheus Agent dalam kluster + remote_write</a></li><li class="l3"><a href="#m3-nota-apa-itu-opentelemetry-dan-bila-perlu">Nota: Apa itu OpenTelemetry dan bila perlu</a></li><li class="l2"><a href="#m3-makmal-3-1-pasang-kube-state-metrics-dan-node-exporter">Makmal 3.1: Pasang kube-state-metrics dan node-exporter</a></li><li class="l2"><a href="#m3-makmal-3-2-serviceaccount-dan-rbac-untuk-prometheus-luar">Makmal 3.2: ServiceAccount dan RBAC untuk Prometheus luar</a></li><li class="l2"><a href="#m3-makmal-3-3-naikkan-stack-monitoring-luar">Makmal 3.3: Naikkan stack monitoring luar</a></li><li class="l2"><a href="#m3-makmal-3-3b-alternatif-tukar-kepada-pilihan-b">Makmal 3.3B (alternatif): Tukar kepada Pilihan B</a></li><li class="l2"><a href="#m3-makmal-3-4-dashboard-grafana">Makmal 3.4: Dashboard Grafana</a></li><li class="l3"><a href="#m3-a-dashboard-yang-disediakan">A. Dashboard yang disediakan</a></li><li class="l3"><a href="#m3-b-bina-panel-sendiri">B. Bina panel sendiri</a></li><li class="l3"><a href="#m3-c-dashboard-komuniti-import">C. Dashboard komuniti (import)</a></li><li class="l2"><a href="#m3-makmal-3-5-peraturan-alert-prometheus-alertmanager">Makmal 3.5: Peraturan alert Prometheus + Alertmanager</a></li><li class="l3"><a href="#m3-penghalaan-alertmanager">Penghalaan Alertmanager</a></li><li class="l2"><a href="#m3-makmal-3-6-sambung-slack-teams-dan-email-sebenar">Makmal 3.6: Sambung Slack, Teams dan Email sebenar</a></li><li class="l3"><a href="#m3-slack">Slack</a></li><li class="l3"><a href="#m3-microsoft-teams">Microsoft Teams</a></li><li class="l3"><a href="#m3-email-sebenar-contoh-office-365-gmail">Email sebenar (contoh Office 365 / Gmail)</a></li><li class="l3"><a href="#m3-alternatif-grafana-managed-alerting">Alternatif: Grafana-managed alerting</a></li><li class="l2"><a href="#m3-makmal-3-7-cetuskan-alert-sebenar">Makmal 3.7: Cetuskan alert sebenar</a></li><li class="l2"><a href="#m3-semakan-akhir-modul">Semakan akhir modul</a></li><li class="l3"><a href="#m3-hentikan-dan-hidupkan-semula-stack-monitoring">Hentikan dan hidupkan semula stack monitoring</a></li><li class="l2"><a href="#m3-rujukan">Rujukan</a></li><li class="l2"><a href="#m3-fail">Fail modul</a></li></ul></li>
 <li class="nav-mod" data-m="m4"><div class="nav-row"><a class="nav-top" href="#m4"><span>Modul 4 · Day-2 Ops</span><span class="nav-count" data-m="m4"></span></a><button type="button" class="nav-exp" aria-expanded="false" aria-label="Tunjuk sub-bahagian Modul 4 · Day-2 Ops"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></button></div><ul><li class="l2"><a href="#m4-jadual">Jadual</a></li><li class="l2"><a href="#m4-teori-ringkas">Teori ringkas</a></li><li class="l3"><a href="#m4-strategi-deployment">Strategi deployment</a></li><li class="l3"><a href="#m4-kitaran-hayat-penamatan-pod-kunci-zero-downtime">Kitaran hayat penamatan pod (kunci zero-downtime)</a></li><li class="l3"><a href="#m4-gangguan-sukarela-vs-tidak-sukarela">Gangguan sukarela vs tidak sukarela</a></li><li class="l2"><a href="#m4-makmal-4-1-zero-downtime-rolling-update">Makmal 4.1: Zero-downtime rolling update</a></li><li class="l3"><a href="#m4-a-deploy-versi-production-ready">A. Deploy versi production-ready</a></li><li class="l3"><a href="#m4-b-rollout-v2-di-bawah-beban">B. Rollout v2 di bawah beban</a></li><li class="l3"><a href="#m4-c-eksperimen-pecahkan-zero-downtime">C. Eksperimen: pecahkan zero-downtime</a></li><li class="l3"><a href="#m4-d-rollout-gagal-dan-rollback">D. Rollout gagal dan rollback</a></li><li class="l2"><a href="#m4-makmal-4-2-blue-green-deployment">Makmal 4.2: Blue-green deployment</a></li><li class="l2"><a href="#m4-makmal-4-3-canary-deployment">Makmal 4.3: Canary deployment</a></li><li class="l3"><a href="#m4-a-canary-sihat-promosi-berperingkat">A. Canary sihat, promosi berperingkat</a></li><li class="l3"><a href="#m4-b-canary-rosak-kesan-dan-batalkan">B. Canary rosak, kesan dan batalkan</a></li><li class="l2"><a href="#m4-makmal-4-4-pod-eviction">Makmal 4.4: Pod eviction</a></li><li class="l3"><a href="#m4-a-kubectl-drain-dan-poddisruptionbudget">A. kubectl drain dan PodDisruptionBudget</a></li><li class="l3"><a href="#m4-b-eviction-oleh-kubelet-had-ephemeral-storage">B. Eviction oleh kubelet (had ephemeral storage)</a></li><li class="l3"><a href="#m4-c-priority-dan-preemption">C. Priority dan preemption</a></li><li class="l2"><a href="#m4-makmal-4-5-log-shipping-ke-storan-luar">Makmal 4.5: Log shipping ke storan luar</a></li><li class="l3"><a href="#m4-a-naikkan-storan-log-luar">A. Naikkan storan log luar</a></li><li class="l3"><a href="#m4-b-pasang-fluent-bit">B. Pasang Fluent Bit</a></li><li class="l3"><a href="#m4-c-cari-log-di-grafana">C. Cari log di Grafana</a></li><li class="l3"><a href="#m4-d-sahkan-arkib-di-s3">D. Sahkan arkib di S3</a></li><li class="l3"><a href="#m4-e-ketahanan-apa-jadi-bila-storan-luar-mati">E. Ketahanan: apa jadi bila storan luar mati?</a></li><li class="l2"><a href="#m4-makmal-4-6-troubleshooting-kegagalan-container">Makmal 4.6: Troubleshooting kegagalan container</a></li><li class="l3"><a href="#m4-aliran-diagnosis">Aliran diagnosis</a></li><li class="l3"><a href="#m4-kotak-alat">Kotak alat</a></li><li class="l3"><a href="#m4-kes">Kes</a></li><li class="l2"><a href="#m4-penutup-senarai-semak-day-2">Penutup: senarai semak Day-2</a></li><li class="l2"><a href="#m4-rujukan">Rujukan</a></li><li class="l2"><a href="#m4-fail">Fail modul</a></li></ul></li>
 <li class="nav-mod" data-m="m5"><div class="nav-row"><a class="nav-top" href="#m5"><span>Modul 5 · OpenTelemetry (pilihan)</span><span class="nav-count" data-m="m5"></span></a><button type="button" class="nav-exp" aria-expanded="false" aria-label="Tunjuk sub-bahagian Modul 5 · OpenTelemetry (pilihan)"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></button></div><ul><li class="l2"><a href="#m5-jadual-cadangan">Jadual (cadangan)</a></li><li class="l2"><a href="#m5-teori-ringkas">Teori ringkas</a></li><li class="l3"><a href="#m5-setup-sekarang-vs-opentelemetry">Setup sekarang vs OpenTelemetry</a></li><li class="l3"><a href="#m5-bila-pilih-opentelemetry-bila-kekal-dengan-cara-sekarang">Bila pilih OpenTelemetry, bila kekal dengan cara sekarang</a></li><li class="l3"><a href="#m5-bahagian-bahagian-opentelemetry">Bahagian-bahagian OpenTelemetry</a></li><li class="l3"><a href="#m5-seni-bina-makmal">Seni bina makmal</a></li><li class="l3"><a href="#m5-konsep-trace-dalam-2-minit">Konsep trace dalam 2 minit</a></li><li class="l2"><a href="#m5-makmal-5-1-naikkan-tempo-di-luar-kluster">Makmal 5.1: Naikkan Tempo di luar kluster</a></li><li class="l2"><a href="#m5-makmal-5-2-tukar-prometheus-luar-ke-pilihan-b">Makmal 5.2: Tukar Prometheus luar ke Pilihan B</a></li><li class="l2"><a href="#m5-makmal-5-3-pasang-opentelemetry-collector">Makmal 5.3: Pasang OpenTelemetry Collector</a></li><li class="l2"><a href="#m5-makmal-5-4-sahkan-metrik-dan-dashboard-modul-3">Makmal 5.4: Sahkan metrik dan dashboard Modul 3</a></li><li class="l2"><a href="#m5-makmal-5-5-instrumentasi-aplikasi-dengan-sdk-opentelemetry">Makmal 5.5: Instrumentasi aplikasi dengan SDK OpenTelemetry</a></li><li class="l2"><a href="#m5-makmal-5-6-cari-request-lambat-dalam-grafana">Makmal 5.6: Cari request lambat dalam Grafana</a></li><li class="l3"><a href="#m5-a-cari-trace-dengan-traceql">A. Cari trace dengan TraceQL</a></li><li class="l3"><a href="#m5-b-service-graph">B. Service graph</a></li><li class="l3"><a href="#m5-c-daripada-trace-ke-log-perlukan-modul-4">C. Daripada trace ke log (perlukan Modul 4)</a></li><li class="l2"><a href="#m5-cabaran">Cabaran</a></li><li class="l2"><a href="#m5-pembersihan">Pembersihan</a></li><li class="l2"><a href="#m5-semakan-akhir-modul">Semakan akhir modul</a></li><li class="l2"><a href="#m5-apa-yang-telah-diuji">Apa yang telah diuji</a></li><li class="l2"><a href="#m5-versi-komponen-modul-ini">Versi komponen modul ini</a></li><li class="l2"><a href="#m5-rujukan">Rujukan</a></li><li class="l2"><a href="#m5-fail">Fail modul</a></li></ul></li>
 <li class="nav-mod" data-m="m6"><div class="nav-row"><a class="nav-top" href="#m6"><span>Modul 6 · KEDA (pilihan)</span><span class="nav-count" data-m="m6"></span></a><button type="button" class="nav-exp" aria-expanded="false" aria-label="Tunjuk sub-bahagian Modul 6 · KEDA (pilihan)"><svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></button></div><ul><li class="l2"><a href="#m6-jadual-cadangan">Jadual (cadangan)</a></li><li class="l2"><a href="#m6-teori-ringkas">Teori ringkas</a></li><li class="l3"><a href="#m6-keda-dibina-di-atas-hpa">KEDA dibina di atas HPA</a></li><li class="l3"><a href="#m6-dari-hpa-ke-scaledobject">Dari HPA ke ScaledObject</a></li><li class="l3"><a href="#m6-dua-gelung-masa">Dua gelung masa</a></li><li class="l3"><a href="#m6-bila-pilih-keda-bila-kekal-dengan-hpa-biasa">Bila pilih KEDA, bila kekal dengan HPA biasa</a></li><li class="l2"><a href="#m6-makmal-6-1-pasang-keda-dengan-helm">Makmal 6.1: Pasang KEDA dengan Helm</a></li><li class="l2"><a href="#m6-makmal-6-2-sahkan-query-di-prometheus-dahulu">Makmal 6.2: Sahkan query di Prometheus dahulu</a></li><li class="l2"><a href="#m6-makmal-6-3-ganti-hpa-cpu-dengan-scaledobject">Makmal 6.3: Ganti HPA CPU dengan ScaledObject</a></li><li class="l3"><a href="#m6-a-buang-hpa-modul-1-dan-cipta-scaledobject">A. Buang HPA Modul 1 dan cipta ScaledObject</a></li><li class="l3"><a href="#m6-b-hpa-yang-dicipta-oleh-keda">B. HPA yang dicipta oleh KEDA</a></li><li class="l3"><a href="#m6-c-ulang-load-test-modul-2">C. Ulang load test Modul 2</a></li><li class="l2"><a href="#m6-makmal-6-4-apa-jadi-bila-prometheus-mati">Makmal 6.4: Apa jadi bila Prometheus mati?</a></li><li class="l2"><a href="#m6-makmal-6-5-cron-dan-scale-to-zero">Makmal 6.5: Cron dan scale-to-zero</a></li><li class="l3"><a href="#m6-a-kerja-berjadual-yang-turun-ke-0">A. Kerja berjadual yang turun ke 0</a></li><li class="l3"><a href="#m6-b-eksperimen-kenapa-bukan-scale-to-zero-untuk-demo-app">B. Eksperimen: kenapa bukan scale-to-zero untuk demo-app?</a></li><li class="l2"><a href="#m6-cabaran">Cabaran</a></li><li class="l2"><a href="#m6-pembersihan">Pembersihan</a></li><li class="l2"><a href="#m6-semakan-akhir-modul">Semakan akhir modul</a></li><li class="l2"><a href="#m6-apa-yang-telah-diuji">Apa yang telah diuji</a></li><li class="l2"><a href="#m6-versi-komponen-modul-ini">Versi komponen modul ini</a></li><li class="l2"><a href="#m6-rujukan">Rujukan</a></li><li class="l2"><a href="#m6-fail">Fail modul</a></li></ul></li>
@@ -312,7 +312,7 @@ details:not(.file) summary{cursor:pointer;font-weight:600}
 ├── modul-5-opentelemetry/    (pilihan)
 │   ├── app/                  app_otel.py (kedai + inventori, SDK OTel), ConfigMap, Dockerfile
 │   ├── k8s/                  OpenTelemetry Collector DaemonSet + RBAC, Deployment kedai &amp; inventori
-│   └── external/             Tempo (docker compose), prometheus-pilihan-b.yml
+│   └── external/             Tempo (docker compose)
 └── modul-6-keda/             (pilihan)
     ├── helm/                 keda-values.yaml (nilai Helm untuk makmal)
     └── k8s/                  ScaledObject Prometheus (RPS) untuk demo-app, Deployment laporan + ScaledObject cron
@@ -4321,7 +4321,7 @@ class StepLoad(LoadTestShape):
 <h3 id="m3-seni-bina-makmal-pilihan-a-prometheus-luar-scrape-terus"><a class="hl" href="#m3-seni-bina-makmal-pilihan-a-prometheus-luar-scrape-terus">Seni bina makmal (Pilihan A: Prometheus luar scrape terus)</a></h3>
 <figure class="fig" id="fig-monitoring-luar-kluster"><div class="fig-scroll"><svg viewBox="0 0 900 420" role="img" aria-labelledby="mot mod"><title id="mot">Monitoring luar kluster (Pilihan A)</title><desc id="mod">Prometheus di luar kluster scrape kube-state-metrics melalui NodePort, node-exporter pada port 9100, dan cAdvisor serta pod melalui proxy API server dengan token ServiceAccount. Alert ke Alertmanager lalu Email, Slack, Teams.</desc><defs><marker id="moh" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="head"/></marker><marker id="moa" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="heada"/></marker></defs><rect x="20" y="40" width="290" height="360" rx="12" class="zone2"/><text x="36" y="66" class="th" text-anchor="start">Luar kluster</text><text x="294" y="66" class="ts m" text-anchor="end">docker compose</text><rect x="44" y="92" width="242" height="52" rx="8" class="acc"/><text x="165.0" y="115.0" class="th" text-anchor="middle">Prometheus</text><text x="165.0" y="133.0" class="ts" text-anchor="middle">scrape + alert rules</text><rect x="44" y="196" width="242" height="44" rx="8" class="box"/><text x="165.0" y="223.0" class="th" text-anchor="middle">Alertmanager</text><path d="M165,144 V194" class="arr" marker-end="url(#moh)"/><rect x="44" y="272" width="74" height="36" rx="8" class="okb"/><text x="81.0" y="295.0" class="ts" text-anchor="middle">Email</text><path d="M81,240 V270" class="arr" marker-end="url(#moh)"/><rect x="128" y="272" width="74" height="36" rx="8" class="okb"/><text x="165.0" y="295.0" class="ts" text-anchor="middle">Slack</text><path d="M165,240 V270" class="arr" marker-end="url(#moh)"/><rect x="212" y="272" width="74" height="36" rx="8" class="okb"/><text x="249.0" y="295.0" class="ts" text-anchor="middle">Teams</text><path d="M249,240 V270" class="arr" marker-end="url(#moh)"/><rect x="44" y="334" width="242" height="46" rx="8" class="box"/><text x="165.0" y="354.0" class="th" text-anchor="middle">Grafana</text><text x="165.0" y="372.0" class="ts" text-anchor="middle">dashboard + alert Grafana</text><path d="M44,357 H32 V118 H42" class="arr" marker-end="url(#moh)"/><rect x="370" y="40" width="510" height="360" rx="12" class="zone"/><text x="386" y="66" class="th" text-anchor="start">Kluster k3d “lab”</text><rect x="392" y="92" width="200" height="52" rx="8" class="box"/><text x="492.0" y="115.0" class="th" text-anchor="middle">API server :6443</text><text x="492.0" y="133.0" class="ts" text-anchor="middle">token SA prometheus-external</text><rect x="652" y="84" width="208" height="42" rx="8" class="box"/><text x="756.0" y="102.0" class="th" text-anchor="middle">kubelet / cAdvisor</text><text x="756.0" y="120.0" class="ts" text-anchor="middle">setiap node</text><rect x="652" y="140" width="208" height="42" rx="8" class="box"/><text x="756.0" y="158.0" class="th" text-anchor="middle">pod demo-app</text><text x="756.0" y="176.0" class="ts m" text-anchor="middle">:8080/metrics</text><path d="M592,110 H650" class="arr" marker-end="url(#moh)"/><path d="M592,126 H620 V161 H650" class="arr" marker-end="url(#moh)"/><text x="621" y="102" class="ts" text-anchor="middle">proxy</text><rect x="392" y="210" width="200" height="52" rx="8" class="box"/><text x="492.0" y="233.0" class="th" text-anchor="middle">kube-state-metrics</text><text x="492.0" y="251.0" class="ts" text-anchor="middle">NodePort 30081</text><rect x="392" y="300" width="200" height="52" rx="8" class="box"/><text x="492.0" y="323.0" class="th" text-anchor="middle">node-exporter</text><text x="492.0" y="341.0" class="ts" text-anchor="middle">DaemonSet · hostNetwork :9100</text><path d="M286,112 H390" class="arra" marker-end="url(#moa)"/><path d="M286,124 H340 V236 H390" class="arra" marker-end="url(#moa)"/><path d="M286,132 H328 V326 H390" class="arra" marker-end="url(#moa)"/><text x="338" y="104" class="ta" text-anchor="middle">scrape</text><rect x="652" y="210" width="208" height="142" rx="8" class="box"/><text x="668" y="234" class="th" text-anchor="start">RBAC least privilege</text><text x="668" y="260" class="ts m" text-anchor="start">✓ get nodes/proxy</text><text x="668" y="282" class="ts m" text-anchor="start">✓ get pods/proxy</text><text x="668" y="304" class="ts m" text-anchor="start">✗ delete pods</text><text x="668" y="326" class="ts m" text-anchor="start">✗ get secrets</text></svg></div><figcaption><span>Pilihan A: Prometheus luar scrape terus. Akses ke cAdvisor dan pod melalui proxy API server, dikawal RBAC.</span><a class="svg-link" href="svg/monitoring-luar-kluster.svg">SVG</a></figcaption></figure>
 
-<p>Langkah untuk Pilihan A ialah Makmal 3.1 (exporter), 3.2 (RBAC + token) dan <a href="#m3-makmal-3-3-naikkan-stack-monitoring-luar">Makmal 3.3</a> (naikkan Prometheus, Alertmanager dan Grafana dengan <code>docker compose</code>). Pilihan B di bawah ialah alternatif, bukan langkah tambahan.</p>
+<p>Langkah untuk Pilihan A ialah Makmal 3.1 (exporter), 3.2 (RBAC + token) dan <a href="#m3-makmal-3-3-naikkan-stack-monitoring-luar">Makmal 3.3</a> (naikkan Prometheus, Alertmanager dan Grafana dengan <code>docker compose</code>). Pilihan B di bawah ialah alternatif, bukan langkah tambahan; langkahnya dalam <a href="#m3-makmal-3-3b-alternatif-tukar-kepada-pilihan-b">Makmal 3.3B</a>.</p>
 <p>Kenapa melalui <strong>API server proxy</strong> untuk cAdvisor dan pod? Kerana IP pod (<code>10.42.x.x</code> dalam k3s) tidak boleh dicapai dari luar kluster, dan port kubelet 10250 biasanya ditutup. API server biasanya sudah boleh dicapai, dan akses dikawal oleh RBAC.</p>
 <h3 id="m3-pilihan-b-prometheus-agent-dalam-kluster-remote-write"><a class="hl" href="#m3-pilihan-b-prometheus-agent-dalam-kluster-remote-write">Pilihan B: Prometheus Agent dalam kluster + remote_write</a></h3>
 <p>Bila Prometheus luar <strong>tidak boleh</strong> capai kluster langsung (firewall hanya benarkan trafik keluar), jalankan Prometheus dalam <em>agent mode</em> di dalam kluster dan <code>remote_write</code> ke Prometheus luar. Manifest: <a href="#f-modul-3-monitoring-k8s-04-pilihan-b-prometheus-agent-yaml"><code>k8s/04-pilihan-b-prometheus-agent.yaml</code></a>. Grafana Alloy dan OpenTelemetry Collector ialah alternatif lain untuk peranan yang sama; <a href="#m5">Modul 5 (pilihan)</a> menunjukkan Pilihan B dengan OpenTelemetry Collector.</p>
@@ -4356,8 +4356,24 @@ class StepLoad(LoadTestShape):
 <td>Makmal, rangkaian dalaman rata</td>
 <td>Banyak kluster, cloud, kluster di belakang NAT</td>
 </tr>
+<tr>
+<td>Prometheus, Alertmanager, Grafana luar</td>
+<td><code>docker compose</code></td>
+<td><code>docker compose</code> yang <strong>sama</strong> (Prometheus jadi penerima <code>remote_write</code>)</td>
+</tr>
+<tr>
+<td>Prometheus luar scrape</td>
+<td>Semua job kluster</td>
+<td>Job <code>prometheus</code> sahaja</td>
+</tr>
+<tr>
+<td>Token ServiceAccount di luar</td>
+<td>Perlu (<code>get-k8s-credentials.sh</code>)</td>
+<td>Tidak perlu</td>
+</tr>
 </tbody>
 </table></div>
+<p><strong>Pilihan B tidak menggantikan stack <code>docker compose</code>.</strong> Agent dalam kluster hanya mengumpul dan menghantar metrik; ia tidak menyimpan data untuk query, tidak menilai peraturan alert dan tiada UI. Prometheus luar masih diperlukan untuk menyimpan data, menilai alert dan menjadi datasource Grafana, jadi Prometheus, Alertmanager, Grafana dan Mailpit tetap dinaikkan dengan <code>docker compose up -d</code> seperti Makmal 3.3. Yang berubah hanya konfigurasi Prometheus luar (berhenti scrape kluster) dan satu manifest tambahan dalam kluster. Langkah penuh: <a href="#m3-makmal-3-3b-alternatif-tukar-kepada-pilihan-b">Makmal 3.3B</a>.</p>
 <h3 id="m3-nota-apa-itu-opentelemetry-dan-bila-perlu"><a class="hl" href="#m3-nota-apa-itu-opentelemetry-dan-bila-perlu">Nota: Apa itu OpenTelemetry dan bila perlu</a></h3>
 <p><strong>OpenTelemetry (OTel)</strong> ialah standard terbuka (projek CNCF) untuk mengumpul tiga jenis isyarat <em>observability</em>:</p>
 <div class="tbl"><table>
@@ -4620,6 +4636,118 @@ kube_horizontalpodautoscaler_status_current_replicas{namespace=&quot;demo&quot;}
 
 # RPS demo-app mengikut kod HTTP
 sum by (code) (rate(demo_http_requests_total{path!~&quot;/healthz|/readyz|/metrics&quot;}[1m]))
+</code></pre></div>
+<h2 id="m3-makmal-3-3b-alternatif-tukar-kepada-pilihan-b"><a class="hl" href="#m3-makmal-3-3b-alternatif-tukar-kepada-pilihan-b">Makmal 3.3B (alternatif): Tukar kepada Pilihan B</a><label class="done-toggle"><input type="checkbox" data-k="m3-makmal-3-3b-alternatif-tukar-kepada-pilihan-b" data-m="m3"><span>Selesai</span></label></h2>
+<p>Langkau bahagian ini jika anda kekal dengan Pilihan A. Bahagian ini mengandaikan Makmal 3.1 dan 3.3 sudah siap: exporter berjalan dalam kluster dan stack <code>docker compose</code> sudah <code>Up</code>. Ringkasan apa yang dijalankan di mana:</p>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>Komponen</th>
+<th>Pilihan A</th>
+<th>Pilihan B</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>kube-state-metrics, node-exporter (Makmal 3.1)</td>
+<td>Dalam kluster</td>
+<td>Sama</td>
+</tr>
+<tr>
+<td>ClusterRole <code>prometheus-external</code> (<code>k8s/03-prometheus-external-rbac.yaml</code>, Makmal 3.2)</td>
+<td>Untuk token Prometheus luar</td>
+<td>Masih di-<code>apply</code>, kerana Prometheus Agent guna semula ClusterRole ini</td>
+</tr>
+<tr>
+<td><code>get-k8s-credentials.sh</code> (token &amp; CA)</td>
+<td>Perlu</td>
+<td>Tidak perlu</td>
+</tr>
+<tr>
+<td>Prometheus Agent (<code>k8s/04-pilihan-b-prometheus-agent.yaml</code>)</td>
+<td>Tiada</td>
+<td>Dalam kluster, scrape dan <code>remote_write</code></td>
+</tr>
+<tr>
+<td>Prometheus, Alertmanager, Grafana, Mailpit</td>
+<td><code>docker compose up -d</code></td>
+<td><code>docker compose up -d</code> yang sama</td>
+</tr>
+<tr>
+<td><code>external/prometheus/prometheus.yml</code></td>
+<td>6 job scrape</td>
+<td>Diganti dengan <code>prometheus-pilihan-b.yml</code> (job <code>prometheus</code> sahaja)</td>
+</tr>
+<tr>
+<td>Peraturan alert, Alertmanager, dashboard Grafana</td>
+<td>Tiada perubahan</td>
+<td>Tiada perubahan (nama metrik dan label <code>job</code> sama)</td>
+</tr>
+</tbody>
+</table></div>
+<p>Penerima <code>remote_write</code> sudah dihidupkan dalam <a href="#f-modul-3-monitoring-external-docker-compose-yml"><code>external/docker-compose.yml</code></a> melalui flag <code>--web.enable-remote-write-receiver</code>, jadi fail Compose tidak perlu diubah.</p>
+<p><strong>Langkah 1: Hentikan Prometheus luar daripada scrape kluster.</strong> Jika kedua-dua Prometheus luar dan agent mengumpul sasaran yang sama, setiap siri muncul dua kali dan dashboard menjumlahkan nilai berganda.</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Salin</button></div><pre><code class="language-bash">cd ~/bengkel-k8s/modul-3-monitoring/external
+cp prometheus/prometheus.yml prometheus/prometheus.yml.asal
+cp prometheus/prometheus-pilihan-b.yml prometheus/prometheus.yml
+curl -X POST localhost:9090/-/reload
+</code></pre></div>
+<p>Buka http://localhost:9090/targets. Jangkaan: hanya job <code>prometheus</code>.</p>
+<p><strong>Langkah 2: Cari alamat Prometheus luar yang boleh dicapai dari pod.</strong> Container Prometheus disambung ke rangkaian Docker <code>k3d-lab</code>, sama seperti node k3d, jadi pod boleh capai IP container itu terus:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Salin</button></div><pre><code class="language-bash">PROM_IP=$(docker inspect monitoring-luar-prometheus-1 -f '{{(index .NetworkSettings.Networks &quot;k3d-lab&quot;).IPAddress}}')
+echo $PROM_IP        # cth 172.18.0.6
+</code></pre></div>
+<p><strong>Langkah 3: Pasang Prometheus Agent</strong> dengan <code>PROMETHEUS_LUAR</code> dalam manifest diganti oleh IP tadi:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Salin</button></div><pre><code class="language-bash">cd ~/bengkel-k8s/modul-3-monitoring
+kubectl apply -f k8s/03-prometheus-external-rbac.yaml      # jika Makmal 3.2 dilangkau
+sed &quot;s/PROMETHEUS_LUAR/$PROM_IP/&quot; k8s/04-pilihan-b-prometheus-agent.yaml | kubectl apply -f -
+kubectl -n monitoring rollout status deploy/prometheus-agent
+kubectl -n monitoring logs deploy/prometheus-agent | grep -iE 'remote|error' | tail -5
+</code></pre></div>
+<p><strong>Langkah 4: Sahkan data tiba.</strong> Halaman Targets Prometheus luar tidak menunjukkan sasaran agent, kerana Prometheus luar tidak scrape mereka. Semak dengan query di http://localhost:9090/query:</p>
+<div class="code"><div class="code-bar"><span>promql</span><button type="button" class="copy">Salin</button></div><pre><code class="nohighlight">count by (job) (up{cluster=&quot;lab&quot;})
+</code></pre></div>
+<p>Jangkaan: <code>kube-state-metrics</code> 1, <code>node-exporter</code> 3, <code>kubernetes-cadvisor</code> 3, <code>kubernetes-pods</code> = bilangan pod demo-app. Label <code>cluster="lab"</code> datang daripada <code>external_labels</code> agent. Dashboard Bengkel K8s di Grafana terus berfungsi tanpa perubahan. Untuk melihat sasaran dari sisi agent:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Salin</button></div><pre><code class="language-bash">kubectl -n monitoring port-forward deploy/prometheus-agent 9091:9090
+# buka http://localhost:9091/targets
+</code></pre></div>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>Masalah</th>
+<th>Punca lazim</th>
+<th>Penyelesaian</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Log agent <code>connection refused</code> atau <code>context deadline exceeded</code> ke <code>/api/v1/write</code></td>
+<td>IP salah, atau container Prometheus dicipta semula dan IP berubah</td>
+<td>Ulang Langkah 2 dan 3</td>
+</tr>
+<tr>
+<td>Log agent <code>404</code> ke <code>/api/v1/write</code></td>
+<td>Prometheus luar tanpa <code>--web.enable-remote-write-receiver</code></td>
+<td>Guna <code>docker-compose.yml</code> modul ini, kemudian <code>docker compose up -d</code></td>
+</tr>
+<tr>
+<td>Query memulangkan nilai berganda</td>
+<td>Prometheus luar masih scrape kluster</td>
+<td>Ulang Langkah 1, semak hanya job <code>prometheus</code> di Targets</td>
+</tr>
+<tr>
+<td>Tiada <code>kubernetes-cadvisor</code></td>
+<td>RBAC <code>nodes/metrics</code></td>
+<td><code>kubectl auth can-i get nodes/metrics --as=system:serviceaccount:monitoring:prometheus-agent</code></td>
+</tr>
+</tbody>
+</table></div>
+<p>Perbezaan tingkah laku alert: jika exporter mati, agent masih menghantar <code>up == 0</code> dan alert seperti Pilihan A berbunyi. Tetapi jika <strong>agent sendiri</strong> mati, tiada data langsung sampai, jadi alert perlu mengesan ketiadaan data, contohnya <code>absent(up{job="node-exporter", cluster="lab"})</code>. Di persekitaran sebenar, port <code>remote_write</code> Prometheus luar menerima trafik masuk dari kluster, jadi lindungi dengan TLS dan pengesahan (<code>basic_auth</code> atau token dalam blok <code>remote_write</code>).</p>
+<p>Kembali ke Pilihan A:</p>
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Salin</button></div><pre><code class="language-bash">kubectl delete -f k8s/04-pilihan-b-prometheus-agent.yaml
+cd external
+cp prometheus/prometheus.yml.asal prometheus/prometheus.yml
+curl -X POST localhost:9090/-/reload
 </code></pre></div>
 <h2 id="m3-makmal-3-4-dashboard-grafana"><a class="hl" href="#m3-makmal-3-4-dashboard-grafana">Makmal 3.4: Dashboard Grafana</a><label class="done-toggle"><input type="checkbox" data-k="m3-makmal-3-4-dashboard-grafana" data-m="m3"><span>Selesai</span></label></h2>
 <h3 id="m3-a-dashboard-yang-disediakan"><a class="hl" href="#m3-a-dashboard-yang-disediakan">A. Dashboard yang disediakan</a></h3>
@@ -4895,7 +5023,7 @@ kubectl apply -f ~/bengkel-k8s/modul-1-hpa/05-resourcequota.yaml
 </code></pre></div>
 <h2 id="m3-semakan-akhir-modul"><a class="hl" href="#m3-semakan-akhir-modul">Semakan akhir modul</a></h2>
 <ul>
-<li class="task"><label><input type="checkbox" data-k="m3-semak-1" data-m="m3"><span>Semua target di http://localhost:9090/targets <code>UP</code></span></label></li>
+<li class="task"><label><input type="checkbox" data-k="m3-semak-1" data-m="m3"><span>Semua target di http://localhost:9090/targets <code>UP</code> (Pilihan B: <code>count by (job) (up{cluster="lab"})</code> memaparkan 4 job)</span></label></li>
 <li class="task"><label><input type="checkbox" data-k="m3-semak-2" data-m="m3"><span>Dashboard Bengkel K8s memaparkan data untuk semua baris</span></label></li>
 <li class="task"><label><input type="checkbox" data-k="m3-semak-3" data-m="m3"><span>Peserta menambah sekurang-kurangnya satu panel sendiri dan mengeksport JSON</span></label></li>
 <li class="task"><label><input type="checkbox" data-k="m3-semak-4" data-m="m3"><span>Email ujian diterima di Mailpit; laluan critical diuji dengan <code>amtool config routes test</code></span></label></li>
@@ -6391,6 +6519,35 @@ datasources:
         tags:
           - key: k8s.namespace.name
             value: namespace
+</code></pre></div></details>
+<details class="file" id="f-modul-3-monitoring-external-prometheus-prometheus-pilihan-b-yml"><summary><span class="fname">external/prometheus/prometheus-pilihan-b.yml</span><span class="fsize">1.1 KB</span></summary><div class="code"><div class="code-bar"><span>yaml</span><button type="button" class="copy">Salin</button></div><pre><code class="language-yaml"># Prometheus LUAR untuk Pilihan B: kluster MENOLAK metrik melalui remote_write (Prometheus Agent
+# dalam Modul 3, atau OpenTelemetry Collector dalam Modul 5), jadi Prometheus luar tidak lagi scrape
+# kluster. Hanya job &quot;prometheus&quot; kekal. Token/CA (prometheus/k8s/) tidak diperlukan.
+# Peraturan alert dan Alertmanager sama seperti Pilihan A, kerana nama metrik dan label job tidak berubah.
+# Penerima remote_write dihidupkan oleh --web.enable-remote-write-receiver dalam docker-compose.yml.
+# Guna (dalam modul-3-monitoring/external):
+#   cp prometheus/prometheus.yml prometheus/prometheus.yml.asal
+#   cp prometheus/prometheus-pilihan-b.yml prometheus/prometheus.yml
+#   curl -X POST localhost:9090/-/reload
+# Pulihkan Pilihan A: cp prometheus/prometheus.yml.asal prometheus/prometheus.yml &amp;&amp; curl -X POST localhost:9090/-/reload
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: lab
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: [&quot;alertmanager:9093&quot;]
+
+rule_files:
+  - /etc/prometheus/rules/*.yml
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: [&quot;localhost:9090&quot;]
 </code></pre></div></details>
 <details class="file" id="f-modul-3-monitoring-external-prometheus-prometheus-yml"><summary><span class="fname">external/prometheus/prometheus.yml</span><span class="fsize">4.7 KB</span></summary><div class="code"><div class="code-bar"><span>yaml</span><button type="button" class="copy">Salin</button></div><pre><code class="language-yaml"># Prometheus LUAR kluster. Gantikan nilai berikut untuk persekitaran sebenar:
 #   k3d-lab-server-0:6443   -&gt; alamat API server anda (cth: k8s-api.syarikat.local:6443)
@@ -8957,7 +9114,7 @@ docker compose restart grafana
 <h2 id="m5-makmal-5-2-tukar-prometheus-luar-ke-pilihan-b"><a class="hl" href="#m5-makmal-5-2-tukar-prometheus-luar-ke-pilihan-b">Makmal 5.2: Tukar Prometheus luar ke Pilihan B</a><label class="done-toggle"><input type="checkbox" data-k="m5-makmal-5-2-tukar-prometheus-luar-ke-pilihan-b" data-m="m5"><span>Selesai</span></label></h2>
 <p>Dalam Pilihan B, kluster yang menghantar metrik. Jika Prometheus luar terus scrape kluster (Pilihan A) pada masa yang sama, setiap siri akan muncul dua kali dan dashboard menjumlahkan nilai berganda. Jadi buang job scrape kluster daripada Prometheus luar (masih dalam <code>modul-3-monitoring/external</code>):</p>
 <div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Salin</button></div><pre><code class="language-bash">cp prometheus/prometheus.yml prometheus/prometheus.yml.asal
-cp ../../modul-5-opentelemetry/external/prometheus-pilihan-b.yml prometheus/prometheus.yml
+cp prometheus/prometheus-pilihan-b.yml prometheus/prometheus.yml
 curl -X POST localhost:9090/-/reload
 </code></pre></div>
 <p>Buka http://localhost:9090/targets. Jangkaan: hanya job <code>prometheus</code> tinggal. Jika anda pernah memasang Prometheus Agent Pilihan B dari Modul 3, buang dahulu supaya tiada dua agent:</p>
@@ -9603,33 +9760,6 @@ networks:
 
 volumes:
   tempo-data: {}
-</code></pre></div></details>
-<details class="file" id="f-modul-5-opentelemetry-external-prometheus-pilihan-b-yml"><summary><span class="fname">external/prometheus-pilihan-b.yml</span><span class="fsize">990 B</span></summary><div class="code"><div class="code-bar"><span>yaml</span><button type="button" class="copy">Salin</button></div><pre><code class="language-yaml"># Prometheus LUAR untuk Pilihan B (Modul 5): kluster MENOLAK metrik melalui remote_write
-# (OpenTelemetry Collector), jadi Prometheus tidak lagi scrape kluster. Hanya job &quot;prometheus&quot; kekal.
-# Peraturan alert dan Alertmanager sama seperti Modul 3, kerana nama metrik dan label job tidak berubah.
-# Guna (dalam modul-3-monitoring/external):
-#   cp prometheus/prometheus.yml prometheus/prometheus.yml.asal
-#   cp ../../modul-5-opentelemetry/external/prometheus-pilihan-b.yml prometheus/prometheus.yml
-#   curl -X POST localhost:9090/-/reload
-# Pulihkan Pilihan A: cp prometheus/prometheus.yml.asal prometheus/prometheus.yml &amp;&amp; curl -X POST localhost:9090/-/reload
-global:
-  scrape_interval: 15s
-  evaluation_interval: 15s
-  external_labels:
-    cluster: lab
-
-alerting:
-  alertmanagers:
-    - static_configs:
-        - targets: [&quot;alertmanager:9093&quot;]
-
-rule_files:
-  - /etc/prometheus/rules/*.yml
-
-scrape_configs:
-  - job_name: prometheus
-    static_configs:
-      - targets: [&quot;localhost:9090&quot;]
 </code></pre></div></details>
 <details class="file" id="f-modul-5-opentelemetry-external-tempo-yaml"><summary><span class="fname">external/tempo.yaml</span><span class="fsize">1.1 KB</span></summary><div class="code"><div class="code-bar"><span>yaml</span><button type="button" class="copy">Salin</button></div><pre><code class="language-yaml"># Tempo 3 mod single binary (-target=all): terima trace OTLP, simpan dalam disk tempatan,
 # dan jana metrik span + service graph yang di-remote_write ke Prometheus Modul 3.

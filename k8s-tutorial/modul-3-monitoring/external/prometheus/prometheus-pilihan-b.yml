@@ -1,9 +1,11 @@
-# Prometheus LUAR untuk Pilihan B (Modul 5): kluster MENOLAK metrik melalui remote_write
-# (OpenTelemetry Collector), jadi Prometheus tidak lagi scrape kluster. Hanya job "prometheus" kekal.
-# Peraturan alert dan Alertmanager sama seperti Modul 3, kerana nama metrik dan label job tidak berubah.
+# Prometheus LUAR untuk Pilihan B: kluster MENOLAK metrik melalui remote_write (Prometheus Agent
+# dalam Modul 3, atau OpenTelemetry Collector dalam Modul 5), jadi Prometheus luar tidak lagi scrape
+# kluster. Hanya job "prometheus" kekal. Token/CA (prometheus/k8s/) tidak diperlukan.
+# Peraturan alert dan Alertmanager sama seperti Pilihan A, kerana nama metrik dan label job tidak berubah.
+# Penerima remote_write dihidupkan oleh --web.enable-remote-write-receiver dalam docker-compose.yml.
 # Guna (dalam modul-3-monitoring/external):
 #   cp prometheus/prometheus.yml prometheus/prometheus.yml.asal
-#   cp ../../modul-5-opentelemetry/external/prometheus-pilihan-b.yml prometheus/prometheus.yml
+#   cp prometheus/prometheus-pilihan-b.yml prometheus/prometheus.yml
 #   curl -X POST localhost:9090/-/reload
 # Pulihkan Pilihan A: cp prometheus/prometheus.yml.asal prometheus/prometheus.yml && curl -X POST localhost:9090/-/reload
 global:

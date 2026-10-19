@@ -67,7 +67,7 @@ bengkel-k8s/
 ├── modul-5-opentelemetry/    (pilihan)
 │   ├── app/                  app_otel.py (kedai + inventori, SDK OTel), ConfigMap, Dockerfile
 │   ├── k8s/                  OpenTelemetry Collector DaemonSet + RBAC, Deployment kedai & inventori
-│   └── external/             Tempo (docker compose), prometheus-pilihan-b.yml
+│   └── external/             Tempo (docker compose)
 └── modul-6-keda/             (pilihan)
     ├── helm/                 keda-values.yaml (nilai Helm untuk makmal)
     └── k8s/                  ScaledObject Prometheus (RPS) untuk demo-app, Deployment laporan + ScaledObject cron

@@ -112,7 +112,7 @@ Tips paparan ringkas:
  └───────────────────────
 ```
 
-Langkah untuk Pilihan A ialah Makmal 3.1 (exporter), 3.2 (RBAC + token) dan [Makmal 3.3](#makmal-3-3-naikkan-stack-monitoring-luar) (naikkan Prometheus, Alertmanager dan Grafana dengan `docker compose`). Pilihan B di bawah ialah alternatif, bukan langkah tambahan.
+Langkah untuk Pilihan A ialah Makmal 3.1 (exporter), 3.2 (RBAC + token) dan [Makmal 3.3](#makmal-3-3-naikkan-stack-monitoring-luar) (naikkan Prometheus, Alertmanager dan Grafana dengan `docker compose`). Pilihan B di bawah ialah alternatif, bukan langkah tambahan; langkahnya dalam [Makmal 3.3B](#makmal-3-3b-alternatif-tukar-kepada-pilihan-b).
 
 Kenapa melalui **API server proxy** untuk cAdvisor dan pod? Kerana IP pod (`10.42.x.x` dalam k3s) tidak boleh dicapai dari luar kluster, dan port kubelet 10250 biasanya ditutup. API server biasanya sudah boleh dicapai, dan akses dikawal oleh RBAC.
 
@@ -126,6 +126,11 @@ Bila Prometheus luar **tidak boleh** capai kluster langsung (firewall hanya bena
 | Komponen dalam kluster | Exporter sahaja | Exporter + agent |
 | Jika rangkaian putus | Data hilang semasa putus | Agent simpan WAL dan hantar semula |
 | Sesuai untuk | Makmal, rangkaian dalaman rata | Banyak kluster, cloud, kluster di belakang NAT |
+| Prometheus, Alertmanager, Grafana luar | `docker compose` | `docker compose` yang **sama** (Prometheus jadi penerima `remote_write`) |
+| Prometheus luar scrape | Semua job kluster | Job `prometheus` sahaja |
+| Token ServiceAccount di luar | Perlu (`get-k8s-credentials.sh`) | Tidak perlu |
+
+**Pilihan B tidak menggantikan stack `docker compose`.** Agent dalam kluster hanya mengumpul dan menghantar metrik; ia tidak menyimpan data untuk query, tidak menilai peraturan alert dan tiada UI. Prometheus luar masih diperlukan untuk menyimpan data, menilai alert dan menjadi datasource Grafana, jadi Prometheus, Alertmanager, Grafana dan Mailpit tetap dinaikkan dengan `docker compose up -d` seperti Makmal 3.3. Yang berubah hanya konfigurasi Prometheus luar (berhenti scrape kluster) dan satu manifest tambahan dalam kluster. Langkah penuh: [Makmal 3.3B](#makmal-3-3b-alternatif-tukar-kepada-pilihan-b).
 
 ### Nota: Apa itu OpenTelemetry dan bila perlu
 
@@ -314,6 +319,81 @@ kube_horizontalpodautoscaler_status_current_replicas{namespace="demo"}
 sum by (code) (rate(demo_http_requests_total{path!~"/healthz|/readyz|/metrics"}[1m]))
 ```
 
+## Makmal 3.3B (alternatif): Tukar kepada Pilihan B
+
+Langkau bahagian ini jika anda kekal dengan Pilihan A. Bahagian ini mengandaikan Makmal 3.1 dan 3.3 sudah siap: exporter berjalan dalam kluster dan stack `docker compose` sudah `Up`. Ringkasan apa yang dijalankan di mana:
+
+| Komponen | Pilihan A | Pilihan B |
+|---|---|---|
+| kube-state-metrics, node-exporter (Makmal 3.1) | Dalam kluster | Sama |
+| ClusterRole `prometheus-external` (`k8s/03-prometheus-external-rbac.yaml`, Makmal 3.2) | Untuk token Prometheus luar | Masih di-`apply`, kerana Prometheus Agent guna semula ClusterRole ini |
+| `get-k8s-credentials.sh` (token & CA) | Perlu | Tidak perlu |
+| Prometheus Agent (`k8s/04-pilihan-b-prometheus-agent.yaml`) | Tiada | Dalam kluster, scrape dan `remote_write` |
+| Prometheus, Alertmanager, Grafana, Mailpit | `docker compose up -d` | `docker compose up -d` yang sama |
+| `external/prometheus/prometheus.yml` | 6 job scrape | Diganti dengan `prometheus-pilihan-b.yml` (job `prometheus` sahaja) |
+| Peraturan alert, Alertmanager, dashboard Grafana | Tiada perubahan | Tiada perubahan (nama metrik dan label `job` sama) |
+
+Penerima `remote_write` sudah dihidupkan dalam [`external/docker-compose.yml`](external/docker-compose.yml) melalui flag `--web.enable-remote-write-receiver`, jadi fail Compose tidak perlu diubah.
+
+**Langkah 1: Hentikan Prometheus luar daripada scrape kluster.** Jika kedua-dua Prometheus luar dan agent mengumpul sasaran yang sama, setiap siri muncul dua kali dan dashboard menjumlahkan nilai berganda.
+
+```bash
+cd ~/bengkel-k8s/modul-3-monitoring/external
+cp prometheus/prometheus.yml prometheus/prometheus.yml.asal
+cp prometheus/prometheus-pilihan-b.yml prometheus/prometheus.yml
+curl -X POST localhost:9090/-/reload
+```
+
+Buka http://localhost:9090/targets. Jangkaan: hanya job `prometheus`.
+
+**Langkah 2: Cari alamat Prometheus luar yang boleh dicapai dari pod.** Container Prometheus disambung ke rangkaian Docker `k3d-lab`, sama seperti node k3d, jadi pod boleh capai IP container itu terus:
+
+```bash
+PROM_IP=$(docker inspect monitoring-luar-prometheus-1 -f '{{(index .NetworkSettings.Networks "k3d-lab").IPAddress}}')
+echo $PROM_IP        # cth 172.18.0.6
+```
+
+**Langkah 3: Pasang Prometheus Agent** dengan `PROMETHEUS_LUAR` dalam manifest diganti oleh IP tadi:
+
+```bash
+cd ~/bengkel-k8s/modul-3-monitoring
+kubectl apply -f k8s/03-prometheus-external-rbac.yaml      # jika Makmal 3.2 dilangkau
+sed "s/PROMETHEUS_LUAR/$PROM_IP/" k8s/04-pilihan-b-prometheus-agent.yaml | kubectl apply -f -
+kubectl -n monitoring rollout status deploy/prometheus-agent
+kubectl -n monitoring logs deploy/prometheus-agent | grep -iE 'remote|error' | tail -5
+```
+
+**Langkah 4: Sahkan data tiba.** Halaman Targets Prometheus luar tidak menunjukkan sasaran agent, kerana Prometheus luar tidak scrape mereka. Semak dengan query di http://localhost:9090/query:
+
+```promql
+count by (job) (up{cluster="lab"})
+```
+
+Jangkaan: `kube-state-metrics` 1, `node-exporter` 3, `kubernetes-cadvisor` 3, `kubernetes-pods` = bilangan pod demo-app. Label `cluster="lab"` datang daripada `external_labels` agent. Dashboard Bengkel K8s di Grafana terus berfungsi tanpa perubahan. Untuk melihat sasaran dari sisi agent:
+
+```bash
+kubectl -n monitoring port-forward deploy/prometheus-agent 9091:9090
+# buka http://localhost:9091/targets
+```
+
+| Masalah | Punca lazim | Penyelesaian |
+|---|---|---|
+| Log agent `connection refused` atau `context deadline exceeded` ke `/api/v1/write` | IP salah, atau container Prometheus dicipta semula dan IP berubah | Ulang Langkah 2 dan 3 |
+| Log agent `404` ke `/api/v1/write` | Prometheus luar tanpa `--web.enable-remote-write-receiver` | Guna `docker-compose.yml` modul ini, kemudian `docker compose up -d` |
+| Query memulangkan nilai berganda | Prometheus luar masih scrape kluster | Ulang Langkah 1, semak hanya job `prometheus` di Targets |
+| Tiada `kubernetes-cadvisor` | RBAC `nodes/metrics` | `kubectl auth can-i get nodes/metrics --as=system:serviceaccount:monitoring:prometheus-agent` |
+
+Perbezaan tingkah laku alert: jika exporter mati, agent masih menghantar `up == 0` dan alert seperti Pilihan A berbunyi. Tetapi jika **agent sendiri** mati, tiada data langsung sampai, jadi alert perlu mengesan ketiadaan data, contohnya `absent(up{job="node-exporter", cluster="lab"})`. Di persekitaran sebenar, port `remote_write` Prometheus luar menerima trafik masuk dari kluster, jadi lindungi dengan TLS dan pengesahan (`basic_auth` atau token dalam blok `remote_write`).
+
+Kembali ke Pilihan A:
+
+```bash
+kubectl delete -f k8s/04-pilihan-b-prometheus-agent.yaml
+cd external
+cp prometheus/prometheus.yml.asal prometheus/prometheus.yml
+curl -X POST localhost:9090/-/reload
+```
+
 ## Makmal 3.4: Dashboard Grafana
 
 ### A. Dashboard yang disediakan
@@ -494,7 +574,7 @@ kubectl apply -f ~/bengkel-k8s/modul-1-hpa/05-resourcequota.yaml
 
 ## Semakan akhir modul
 
-- [ ] Semua target di http://localhost:9090/targets `UP`
+- [ ] Semua target di http://localhost:9090/targets `UP` (Pilihan B: `count by (job) (up{cluster="lab"})` memaparkan 4 job)
 - [ ] Dashboard Bengkel K8s memaparkan data untuk semua baris
 - [ ] Peserta menambah sekurang-kurangnya satu panel sendiri dan mengeksport JSON
 - [ ] Email ujian diterima di Mailpit; laluan critical diuji dengan `amtool config routes test`
