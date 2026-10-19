@@ -112,6 +112,8 @@ Tips paparan ringkas:
  └───────────────────────
 ```
 
+Langkah untuk Pilihan A ialah Makmal 3.1 (exporter), 3.2 (RBAC + token) dan [Makmal 3.3](#makmal-3-3-naikkan-stack-monitoring-luar) (naikkan Prometheus, Alertmanager dan Grafana dengan `docker compose`). Pilihan B di bawah ialah alternatif, bukan langkah tambahan.
+
 Kenapa melalui **API server proxy** untuk cAdvisor dan pod? Kerana IP pod (`10.42.x.x` dalam k3s) tidak boleh dicapai dari luar kluster, dan port kubelet 10250 biasanya ditutup. API server biasanya sudah boleh dicapai, dan akses dikawal oleh RBAC.
 
 ### Pilihan B: Prometheus Agent dalam kluster + remote_write
@@ -203,8 +205,9 @@ kubectl auth can-i get secrets     --as=$SA -n demo  # no
 Salin token dan CA untuk Prometheus luar:
 
 ```bash
-cd external
+cd ~/bengkel-k8s/modul-3-monitoring/external
 ./get-k8s-credentials.sh
+ls -l prometheus/k8s/        # mesti ada: ca.crt dan token
 ```
 
 Uji token secara manual (dari laptop, melalui port API server yang k3d dedahkan, `https://127.0.0.1:6550`):
@@ -220,10 +223,59 @@ curl -s --cacert prometheus/k8s/ca.crt -H "Authorization: Bearer $TOKEN" \
 
 ## Makmal 3.3: Naikkan stack monitoring luar
 
+Prometheus, Alertmanager dan Grafana dinaikkan **sekali gus** dengan satu fail Docker Compose: [`external/docker-compose.yml`](external/docker-compose.yml). Fail ini menjalankan 4 container di laptop anda, di luar kluster:
+
+| Servis | Image | Port | Konfigurasi dibaca dari |
+|---|---|---|---|
+| `prometheus` | `prom/prometheus:v3.4.0` | 9090 | `external/prometheus/prometheus.yml` + `prometheus/rules/` + `prometheus/k8s/` (token & CA) |
+| `alertmanager` | `prom/alertmanager:v0.28.1` | 9093 | `external/alertmanager/alertmanager.yml` |
+| `grafana` | `grafana/grafana:12.0.0` | 3000 | `external/grafana/provisioning/` (datasource, dashboard, alert) + `grafana/dashboards/` |
+| `mailpit` | `axllent/mailpit:v1.25` | 8025 | Tiada (pelayan SMTP ujian untuk email alert) |
+
+Prasyarat sebelum `up` (semuanya dari Makmal 3.1 dan 3.2):
+
+- Kluster `lab` sedang berjalan, jadi rangkaian Docker `k3d-lab` wujud. Prometheus disambung ke rangkaian ini supaya boleh capai `k3d-lab-server-0:6443` dan node.
+- `external/prometheus/k8s/token` dan `ca.crt` sudah dijana oleh `./get-k8s-credentials.sh`.
+
 ```bash
-docker compose up -d
-docker compose ps
+cd ~/bengkel-k8s/modul-3-monitoring/external
+docker network ls | grep k3d-lab          # mesti ada satu baris
+docker compose up -d                      # kali pertama: tarik 4 image, ambil masa beberapa minit
+docker compose ps                         # 4 servis, STATUS "Up"
 ```
+
+Jangkaan `docker compose ps` (ringkas):
+
+```
+NAME                             SERVICE        STATUS    PORTS
+monitoring-luar-alertmanager-1   alertmanager   Up        0.0.0.0:9093->9093/tcp
+monitoring-luar-grafana-1        grafana        Up        0.0.0.0:3000->3000/tcp
+monitoring-luar-mailpit-1        mailpit        Up        0.0.0.0:8025->8025/tcp
+monitoring-luar-prometheus-1     prometheus     Up        0.0.0.0:9090->9090/tcp
+```
+
+Semak kesihatan setiap servis dari terminal:
+
+```bash
+curl -s localhost:9090/-/ready        # Prometheus Server is Ready.
+curl -s localhost:9093/-/ready        # OK
+curl -s localhost:3000/api/health     # "database": "ok"
+```
+
+Jika satu servis tiada atau asyik restart, lihat lognya:
+
+```bash
+docker compose logs prometheus --tail=30
+```
+
+| Masalah | Punca lazim | Penyelesaian |
+|---|---|---|
+| `network k3d-lab declared as external, but could not be found` | Kluster `lab` tidak berjalan | `k3d cluster start lab`, kemudian `docker compose up -d` semula |
+| Prometheus log `open /etc/prometheus/k8s/token: no such file` | Langkau `get-k8s-credentials.sh` | Jalankan `./get-k8s-credentials.sh`, kemudian `docker compose restart prometheus` |
+| `port is already allocated` (9090/3000/9093/8025) | Port digunakan program lain | Hentikan program itu, atau tukar port kiri dalam `ports:` (cth `"3001:3000"`) |
+| `no configuration file provided: not found` | Bukan dalam folder `external` | `cd ~/bengkel-k8s/modul-3-monitoring/external` |
+
+Kemudian buka di pelayar:
 
 | Perkhidmatan | URL | Log masuk |
 |---|---|---|
@@ -449,6 +501,18 @@ kubectl apply -f ~/bengkel-k8s/modul-1-hpa/05-resourcequota.yaml
 - [ ] Sekurang-kurangnya 2 alert sebenar dicetuskan dan diterima
 
 Biarkan stack monitoring berjalan. Modul 4 menggunakannya untuk memerhati rolling update dan canary.
+
+### Hentikan dan hidupkan semula stack monitoring
+
+```bash
+cd ~/bengkel-k8s/modul-3-monitoring/external
+docker compose stop          # hentikan sementara (data kekal)
+docker compose start         # hidupkan semula
+docker compose down          # buang container, volume data Prometheus/Grafana kekal
+docker compose down -v       # buang semua termasuk data (selepas bengkel tamat)
+```
+
+Jika kluster `lab` dicipta semula, jalankan `./get-k8s-credentials.sh` sekali lagi (token dan CA baharu), kemudian `docker compose restart prometheus`.
 
 ## Rujukan
 
