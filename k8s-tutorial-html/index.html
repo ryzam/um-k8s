@@ -3524,7 +3524,7 @@ Kapasiti maksimum  ≈ maxReplicas × kapasiti pod   → 10 pod × 5 RPS = ~50 R
 </tr>
 <tr>
 <td>T4: Rakaman</td>
-<td><code>./watch-hpa.sh demo demo-app 5 \| tee hpa-timeline.csv</code></td>
+<td><code>bash watch-hpa.sh demo demo-app 5 \| tee hpa-timeline.csv</code></td>
 </tr>
 </tbody>
 </table></div>
@@ -3570,7 +3570,7 @@ kubectl -n demo get events --field-selector involvedObject.kind=HorizontalPodAut
 <div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Salin</button></div><pre><code class="language-bash">column -s, -t hpa-timeline.csv | less
 </code></pre></div>
 <h2 id="m2-makmal-2-3-stress-test-melebihi-kapasiti"><a class="hl" href="#m2-makmal-2-3-stress-test-melebihi-kapasiti">Makmal 2.3: Stress test, melebihi kapasiti</a><label class="done-toggle"><input type="checkbox" data-k="m2-makmal-2-3-stress-test-melebihi-kapasiti" data-m="m2"><span>Selesai</span></label></h2>
-<p>Mulakan semula rakaman di T4 (<code>./watch-hpa.sh | tee stress-timeline.csv</code>), kemudian di T1:</p>
+<p>Mulakan semula rakaman di T4 (<code>bash watch-hpa.sh | tee stress-timeline.csv</code>), kemudian di T1:</p>
 <div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Salin</button></div><pre><code class="language-bash">k6 run --summary-trend-stats=&quot;avg,p(90),p(95),p(99),max&quot; k6/stress.js
 </code></pre></div>
 <p>Apa yang patut berlaku:</p>
@@ -4449,7 +4449,7 @@ kubectl auth can-i get secrets     --as=$SA -n demo  # no
 </code></pre></div>
 <p>Salin token dan CA untuk Prometheus luar:</p>
 <div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Salin</button></div><pre><code class="language-bash">cd ~/bengkel-k8s/modul-3-monitoring/external
-./get-k8s-credentials.sh
+bash get-k8s-credentials.sh
 ls -l prometheus/k8s/        # mesti ada: ca.crt dan token
 </code></pre></div>
 <p>Uji token secara manual (dari laptop, melalui port API server yang k3d dedahkan, <code>https://127.0.0.1:6550</code>):</p>
@@ -4502,7 +4502,7 @@ curl -s --cacert prometheus/k8s/ca.crt -H &quot;Authorization: Bearer $TOKEN&quo
 <p>Prasyarat sebelum <code>up</code> (semuanya dari Makmal 3.1 dan 3.2):</p>
 <ul>
 <li>Kluster <code>lab</code> sedang berjalan, jadi rangkaian Docker <code>k3d-lab</code> wujud. Prometheus disambung ke rangkaian ini supaya boleh capai <code>k3d-lab-server-0:6443</code> dan node.</li>
-<li><code>external/prometheus/k8s/token</code> dan <code>ca.crt</code> sudah dijana oleh <code>./get-k8s-credentials.sh</code>.</li>
+<li><code>external/prometheus/k8s/token</code> dan <code>ca.crt</code> sudah dijana oleh <code>bash get-k8s-credentials.sh</code>.</li>
 </ul>
 <div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Salin</button></div><pre><code class="language-bash">cd ~/bengkel-k8s/modul-3-monitoring/external
 docker network ls | grep k3d-lab          # mesti ada satu baris
@@ -4539,9 +4539,14 @@ curl -s localhost:3000/api/health     # &quot;database&quot;: &quot;ok&quot;
 <td><code>k3d cluster start lab</code>, kemudian <code>docker compose up -d</code> semula</td>
 </tr>
 <tr>
+<td><code>./get-k8s-credentials.sh: Permission denied</code></td>
+<td>Bit executable hilang (salinan zip atau git lama)</td>
+<td>Jalankan dengan <code>bash get-k8s-credentials.sh</code>, atau <code>chmod +x *.sh</code> dahulu</td>
+</tr>
+<tr>
 <td>Prometheus log <code>open /etc/prometheus/k8s/token: no such file</code></td>
 <td>Langkau <code>get-k8s-credentials.sh</code></td>
-<td>Jalankan <code>./get-k8s-credentials.sh</code>, kemudian <code>docker compose restart prometheus</code></td>
+<td>Jalankan <code>bash get-k8s-credentials.sh</code>, kemudian <code>docker compose restart prometheus</code></td>
 </tr>
 <tr>
 <td><code>port is already allocated</code> (9090/3000/9093/8025)</td>
@@ -5046,7 +5051,7 @@ docker compose start         # hidupkan semula
 docker compose down          # buang container, volume data Prometheus/Grafana kekal
 docker compose down -v       # buang semua termasuk data (selepas bengkel tamat)
 </code></pre></div>
-<p>Jika kluster <code>lab</code> dicipta semula, jalankan <code>./get-k8s-credentials.sh</code> sekali lagi (token dan CA baharu), kemudian <code>docker compose restart prometheus</code>.</p>
+<p>Jika kluster <code>lab</code> dicipta semula, jalankan <code>bash get-k8s-credentials.sh</code> sekali lagi (token dan CA baharu), kemudian <code>docker compose restart prometheus</code>.</p>
 <h2 id="m3-rujukan"><a class="hl" href="#m3-rujukan">Rujukan</a></h2>
 <ul>
 <li>kube-state-metrics: https://github.com/kubernetes/kube-state-metrics/tree/main/docs</li>
@@ -7491,11 +7496,11 @@ kubectl -n demo run preview --rm -i --restart=Never --image=busybox:1.36 -- wget
 </code></pre></div>
 <p>Tukar trafik, sambil k6 berjalan supaya kita lihat peralihan:</p>
 <div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Salin</button></div><pre><code class="language-bash">k6 run -e BASE_URL=http://localhost:30082 -e DURATION=1m ../rolling-update/zero-downtime.js &amp;
-sleep 20; ./switch.sh green
+sleep 20; bash switch.sh green
 wait
 </code></pre></div>
 <p>Rollback serta-merta:</p>
-<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Salin</button></div><pre><code class="language-bash">./switch.sh blue
+<div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Salin</button></div><pre><code class="language-bash">bash switch.sh blue
 </code></pre></div>
 <p>Selepas yakin dengan GREEN, BLUE boleh di-scale ke 0 (simpan untuk rollback pantas) atau dipadam:</p>
 <div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Salin</button></div><pre><code class="language-bash">kubectl -n demo scale deploy demo-bg-blue --replicas=0
@@ -7511,7 +7516,7 @@ wait
 kubectl apply -f 01-stable.yaml -f 02-canary.yaml -f 03-service.yaml
 kubectl -n demo rollout status deploy/demo-canary-stable
 kubectl -n demo rollout status deploy/demo-canary-canary
-./canary-traffic.sh 200
+bash canary-traffic.sh 200
 </code></pre></div>
 <p>Jangkaan, lebih kurang:</p>
 <div class="code"><div class="code-bar"><span>teks</span><button type="button" class="copy">Salin</button></div><pre><code class="nohighlight">    160 &quot;version&quot;: &quot;v1&quot;
@@ -7520,7 +7525,7 @@ kubectl -n demo rollout status deploy/demo-canary-canary
 <p>Promosi berperingkat (semak metrik di Grafana selepas setiap langkah):</p>
 <div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Salin</button></div><pre><code class="language-bash">kubectl -n demo scale deploy demo-canary-canary --replicas=2   # ~33%
 kubectl -n demo scale deploy demo-canary-canary --replicas=4   # ~50%
-./canary-traffic.sh 200
+bash canary-traffic.sh 200
 </code></pre></div>
 <p>Promosi penuh: kemas kini stable ke v2, kemudian buang canary.</p>
 <div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Salin</button></div><pre><code class="language-bash">kubectl -n demo set env deploy/demo-canary-stable VERSION=v2
@@ -7533,7 +7538,7 @@ kubectl -n demo scale deploy demo-canary-canary --replicas=0
 <div class="code"><div class="code-bar"><span>terminal</span><button type="button" class="copy">Salin</button></div><pre><code class="language-bash">kubectl apply -f 01-stable.yaml
 kubectl -n demo set env deploy/demo-canary-canary FAIL_RATE=0.3
 kubectl -n demo scale deploy demo-canary-canary --replicas=1
-./canary-traffic.sh 200
+bash canary-traffic.sh 200
 </code></pre></div>
 <p>Jangkaan: kira-kira 6% <code>GAGAL (5xx)</code> (20% trafik × 30% gagal).</p>
 <p>Jana trafik berterusan supaya Prometheus nampak corak ralat:</p>
@@ -10563,7 +10568,7 @@ kubectl -n demo get hpa keda-hpa-demo-app -o yaml | sed -n '/^spec:/,/^status:/p
 </tr>
 <tr>
 <td>T4: Rakaman</td>
-<td><code>./watch-hpa.sh demo keda-hpa-demo-app 5 \| tee keda-timeline.csv</code></td>
+<td><code>bash watch-hpa.sh demo keda-hpa-demo-app 5 \| tee keda-timeline.csv</code></td>
 </tr>
 </tbody>
 </table></div>

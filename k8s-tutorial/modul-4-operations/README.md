@@ -179,14 +179,14 @@ Tukar trafik, sambil k6 berjalan supaya kita lihat peralihan:
 
 ```bash
 k6 run -e BASE_URL=http://localhost:30082 -e DURATION=1m ../rolling-update/zero-downtime.js &
-sleep 20; ./switch.sh green
+sleep 20; bash switch.sh green
 wait
 ```
 
 Rollback serta-merta:
 
 ```bash
-./switch.sh blue
+bash switch.sh blue
 ```
 
 Selepas yakin dengan GREEN, BLUE boleh di-scale ke 0 (simpan untuk rollback pantas) atau dipadam:
@@ -214,7 +214,7 @@ cd ../canary
 kubectl apply -f 01-stable.yaml -f 02-canary.yaml -f 03-service.yaml
 kubectl -n demo rollout status deploy/demo-canary-stable
 kubectl -n demo rollout status deploy/demo-canary-canary
-./canary-traffic.sh 200
+bash canary-traffic.sh 200
 ```
 
 Jangkaan, lebih kurang:
@@ -229,7 +229,7 @@ Promosi berperingkat (semak metrik di Grafana selepas setiap langkah):
 ```bash
 kubectl -n demo scale deploy demo-canary-canary --replicas=2   # ~33%
 kubectl -n demo scale deploy demo-canary-canary --replicas=4   # ~50%
-./canary-traffic.sh 200
+bash canary-traffic.sh 200
 ```
 
 Promosi penuh: kemas kini stable ke v2, kemudian buang canary.
@@ -249,7 +249,7 @@ Reset ke v1 dan lancarkan canary yang memulangkan HTTP 500 untuk 30% request:
 kubectl apply -f 01-stable.yaml
 kubectl -n demo set env deploy/demo-canary-canary FAIL_RATE=0.3
 kubectl -n demo scale deploy demo-canary-canary --replicas=1
-./canary-traffic.sh 200
+bash canary-traffic.sh 200
 ```
 
 Jangkaan: kira-kira 6% `GAGAL (5xx)` (20% trafik × 30% gagal).

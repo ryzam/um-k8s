@@ -90,7 +90,7 @@ Buka 4 terminal dan dalam setiap satu jalankan `cd ~/bengkel-k8s/modul-2-load-te
 | T1: k6 | (arahan ujian) |
 | T2: HPA | `kubectl -n demo get hpa demo-app --watch` |
 | T3: Pod | `kubectl -n demo get pods -l app=demo-app -o wide --watch` |
-| T4: Rakaman | `./watch-hpa.sh demo demo-app 5 \| tee hpa-timeline.csv` |
+| T4: Rakaman | `bash watch-hpa.sh demo demo-app 5 \| tee hpa-timeline.csv` |
 
 Tambahan berguna (jalankan sekali-sekala):
 
@@ -158,7 +158,7 @@ column -s, -t hpa-timeline.csv | less
 
 ## Makmal 2.3: Stress test, melebihi kapasiti
 
-Mulakan semula rakaman di T4 (`./watch-hpa.sh | tee stress-timeline.csv`), kemudian di T1:
+Mulakan semula rakaman di T4 (`bash watch-hpa.sh | tee stress-timeline.csv`), kemudian di T1:
 
 ```bash
 k6 run --summary-trend-stats="avg,p(90),p(95),p(99),max" k6/stress.js

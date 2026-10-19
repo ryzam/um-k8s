@@ -243,7 +243,7 @@ Gunakan susun atur terminal Modul 2 (setiap terminal bermula dengan `cd ~/bengke
 | T1: k6 | `k6 run k6/load.js` |
 | T2: HPA | `kubectl -n demo get hpa keda-hpa-demo-app --watch` |
 | T3: Pod | `kubectl -n demo get pods -l app=demo-app --watch` |
-| T4: Rakaman | `./watch-hpa.sh demo keda-hpa-demo-app 5 \| tee keda-timeline.csv` |
+| T4: Rakaman | `bash watch-hpa.sh demo keda-hpa-demo-app 5 \| tee keda-timeline.csv` |
 
 Lajur `cpu_pct` dan `mem_pct` dalam CSV akan kosong (HPA ini tiada metrik Resource); lajur replicas dan pod tetap direkod.
 

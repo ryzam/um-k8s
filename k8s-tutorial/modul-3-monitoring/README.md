@@ -212,7 +212,7 @@ Salin token dan CA untuk Prometheus luar:
 
 ```bash
 cd ~/bengkel-k8s/modul-3-monitoring/external
-./get-k8s-credentials.sh
+bash get-k8s-credentials.sh
 ls -l prometheus/k8s/        # mesti ada: ca.crt dan token
 ```
 
@@ -241,7 +241,7 @@ Prometheus, Alertmanager dan Grafana dinaikkan **sekali gus** dengan satu fail D
 Prasyarat sebelum `up` (semuanya dari Makmal 3.1 dan 3.2):
 
 - Kluster `lab` sedang berjalan, jadi rangkaian Docker `k3d-lab` wujud. Prometheus disambung ke rangkaian ini supaya boleh capai `k3d-lab-server-0:6443` dan node.
-- `external/prometheus/k8s/token` dan `ca.crt` sudah dijana oleh `./get-k8s-credentials.sh`.
+- `external/prometheus/k8s/token` dan `ca.crt` sudah dijana oleh `bash get-k8s-credentials.sh`.
 
 ```bash
 cd ~/bengkel-k8s/modul-3-monitoring/external
@@ -277,7 +277,8 @@ docker compose logs prometheus --tail=30
 | Masalah | Punca lazim | Penyelesaian |
 |---|---|---|
 | `network k3d-lab declared as external, but could not be found` | Kluster `lab` tidak berjalan | `k3d cluster start lab`, kemudian `docker compose up -d` semula |
-| Prometheus log `open /etc/prometheus/k8s/token: no such file` | Langkau `get-k8s-credentials.sh` | Jalankan `./get-k8s-credentials.sh`, kemudian `docker compose restart prometheus` |
+| `./get-k8s-credentials.sh: Permission denied` | Bit executable hilang (salinan zip atau git lama) | Jalankan dengan `bash get-k8s-credentials.sh`, atau `chmod +x *.sh` dahulu |
+| Prometheus log `open /etc/prometheus/k8s/token: no such file` | Langkau `get-k8s-credentials.sh` | Jalankan `bash get-k8s-credentials.sh`, kemudian `docker compose restart prometheus` |
 | `port is already allocated` (9090/3000/9093/8025) | Port digunakan program lain | Hentikan program itu, atau tukar port kiri dalam `ports:` (cth `"3001:3000"`) |
 | `no configuration file provided: not found` | Bukan dalam folder `external` | `cd ~/bengkel-k8s/modul-3-monitoring/external` |
 
@@ -599,7 +600,7 @@ docker compose down          # buang container, volume data Prometheus/Grafana k
 docker compose down -v       # buang semua termasuk data (selepas bengkel tamat)
 ```
 
-Jika kluster `lab` dicipta semula, jalankan `./get-k8s-credentials.sh` sekali lagi (token dan CA baharu), kemudian `docker compose restart prometheus`.
+Jika kluster `lab` dicipta semula, jalankan `bash get-k8s-credentials.sh` sekali lagi (token dan CA baharu), kemudian `docker compose restart prometheus`.
 
 ## Rujukan
 
