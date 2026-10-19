@@ -703,6 +703,60 @@ Setahu kami tiada penjana web rasmi daripada projek Prometheus. Rujukan utama ia
 
 Di produksi, ramai pasukan tidak menulis `prometheus.yml` dengan tangan langsung. Carta Helm **kube-prometheus-stack** memasang Prometheus Operator dalam kluster, dan target ditakrifkan sebagai objek Kubernetes `ServiceMonitor` (pilih Service dengan label) atau `PodMonitor` (pilih pod terus). Operator menjana konfigurasi scrape dan `relabel_configs` daripada objek itu. Bengkel ini kekal dengan fail tangan kerana Prometheus kita berada di luar kluster dan kerana fail tangan menunjukkan apa yang sebenarnya berlaku di bawah objek-objek tersebut.
 
+### Minta AI bantu tulis scrape job dan query
+
+Pembantu AI (Claude, ChatGPT, Copilot dan lain-lain) boleh menulis scrape job dan query PromQL jika anda terangkan apa yang mahu dicari. Hasilnya hanya betul jika AI tahu nama metrik dan label **sebenar** dalam sistem anda. Tanpa itu, AI akan meneka nama yang kelihatan munasabah tetapi tidak wujud, dan query memulangkan "Empty query result" tanpa ralat.
+
+Beri tiga perkara dalam prompt:
+
+1. **Konteks:** namespace, nama Deployment atau container, dan label yang anda guna (contoh `namespace="demo"`, `container="app"`).
+2. **Sumber metrik:** dari exporter (kube-state-metrics, node-exporter, cAdvisor) atau dari aplikasi sendiri, dan di mana Prometheus berjalan (dalam bengkel ini: Docker Compose di luar kluster).
+3. **Senarai metrik sebenar,** dengan salah satu cara ini:
+
+```bash
+# Output /metrics target itu sendiri (demo-app melalui NodePort)
+curl -s localhost:30080/metrics | grep -v '^#' | head -40
+```
+
+```bash
+# Semua nama metrik yang sudah ada dalam Prometheus, ditapis
+curl -s localhost:9090/api/v1/label/__name__/values | jq -r '.data[]' | grep -E '^(container_cpu|kube_pod)'
+```
+
+Atau taip awalan nama dalam kotak query Prometheus dan salin cadangan autocomplete.
+
+Contoh prompt yang boleh diguna:
+
+```text
+Prometheus saya berjalan di luar kluster dan scrape cAdvisor serta
+kube-state-metrics. Tulis satu query PromQL untuk CPU (cores) setiap pod
+dalam namespace "demo", container "app", purata 1 minit.
+Metrik yang ada: container_cpu_usage_seconds_total,
+kube_pod_container_resource_requests.
+```
+
+```text
+Ini output /metrics aplikasi saya (ditampal di bawah). Tulis query untuk
+peratus permintaan HTTP dengan kod 5xx dalam 5 minit terakhir, abaikan
+path /healthz, /readyz dan /metrics.
+
+<tampal output curl di sini>
+```
+
+```text
+Tulis scrape job Prometheus (static_configs) untuk Grafana di alamat
+grafana:3000 dalam rangkaian Docker yang sama, dengan label tambahan
+peranan=monitoring. Fail saya ialah prometheus.yml di bawah.
+
+<tampal prometheus.yml di sini>
+```
+
+Jangan terus percaya hasilnya. Sahkan sama seperti kerja anda sendiri:
+
+- Scrape job: `promtool check config` di dalam container, reload, kemudian semak **Status → Targets** ([Semak sebelum dan selepas reload](#semak-sebelum-dan-selepas-reload)).
+- Query: jalankan dalam UI Prometheus (satu query pada satu masa) dan pastikan ada data serta nilainya munasabah. Jika kosong, buang penapis label satu demi satu untuk cari label yang salah.
+- Jika AI guna nama metrik yang tiada dalam senarai anda, minta ia tulis semula dengan hanya nama daripada senarai.
+
 ## Semakan akhir modul
 
 - [ ] Semua target di http://localhost:9090/targets `UP` (Pilihan B: `count by (job) (up{cluster="lab"})` memaparkan 4 job)
