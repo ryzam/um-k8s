@@ -177,13 +177,17 @@ Jangkaan: `Everything is ready. Begin running and processing data.` Ralat biasa:
 
 ## Makmal 5.4: Sahkan metrik dan dashboard Modul 3
 
-Dalam http://localhost:9090/query:
+Dalam http://localhost:9090/query (tampal satu query pada satu masa (kotak ekspresi Prometheus menerima satu ekspresi sahaja)):
+
+**Query 1: setiap target yang di-scrape oleh Collector menghantar "up" seperti Prometheus biasa**
 
 ```promql
-# Setiap target yang di-scrape oleh Collector menghantar "up" seperti Prometheus biasa
 count by (job) (up{cluster="lab"})
+```
 
-# Metrik Collector sendiri: berapa banyak titik metrik dihantar sesaat
+**Query 2: metrik Collector sendiri, berapa banyak titik metrik dihantar sesaat**
+
+```promql
 sum(rate(otelcol_exporter_sent_metric_points_total[1m]))
 ```
 
@@ -267,22 +271,39 @@ kedai        kira-harga                                            ▌   ~5 ms
 
 Jawapannya jelas tanpa membaca log: masa dihabiskan dalam `semak-pangkalan-data` di servis `inventori`. Klik span itu dan lihat atribut `bengkel.lambat = true`, serta atribut resource `k8s.pod.name` dan `k8s.deployment.name` yang ditambah oleh processor `k8s_attributes` (aplikasi tidak menghantarnya).
 
-Query lain untuk dicuba:
+Query lain untuk dicuba, satu demi satu dalam kotak TraceQL:
+
+**Span yang ditanda lambat**
 
 ```
 { span.bengkel.lambat = true }
+```
+
+**Span dengan ralat**
+
+```
 { status = error }
+```
+
+**Kadar span servis inventori**
+
+```
 { resource.service.name = "inventori" } | rate()
 ```
 
 ### B. Service graph
 
-Grafana → **Explore → Tempo → Service Graph**. Jangkaan: `user → kedai → inventori`, dengan kadar request dan ralat pada setiap anak panah. Data ini datang daripada metrik `traces_service_graph_*` yang dijana oleh Tempo dan di-`remote_write` ke Prometheus. Cuba di Prometheus:
+Grafana → **Explore → Tempo → Service Graph**. Jangkaan: `user → kedai → inventori`, dengan kadar request dan ralat pada setiap anak panah. Data ini datang daripada metrik `traces_service_graph_*` yang dijana oleh Tempo dan di-`remote_write` ke Prometheus. Cuba di Prometheus, satu query pada satu masa:
+
+**Kadar request setiap pasangan client → server**
 
 ```promql
 sum by (client, server) (rate(traces_service_graph_request_total[5m]))
+```
 
-# p95 setiap servis, dikira daripada span (tanpa sebarang metrik dalam kod aplikasi)
+**p95 setiap servis, dikira daripada span (tanpa sebarang metrik dalam kod aplikasi)**
+
+```promql
 histogram_quantile(0.95, sum by (le, service) (rate(traces_spanmetrics_latency_bucket{span_kind="SPAN_KIND_SERVER"}[5m])))
 ```
 

@@ -301,23 +301,38 @@ Buka **Prometheus → Status → Targets** (http://localhost:9090/targets). Semu
 | `kubelet` | 3 | Sama seperti cadvisor |
 | `kubernetes-pods` | = bilangan pod demo-app | Pod tiada anotasi `prometheus.io/scrape: "true"` |
 
-Cuba beberapa query di http://localhost:9090/query:
+Nama job dalam jadual ini bukan lalai Prometheus; semuanya ditulis sendiri dalam `prometheus.yml`. Penerangan lanjut dan cara menambah job anda sendiri: [Cara menulis scrape job sendiri](#cara-menulis-scrape-job-sendiri).
+
+Cuba beberapa query di http://localhost:9090/query. Kotak ekspresi Prometheus menerima **satu query pada satu masa**. Salin dan jalankan setiap blok di bawah satu demi satu; jika beberapa query ditampal sekali gus, Prometheus memberi ralat seperti `parse error: unexpected number`.
+
+**CPU setiap pod demo-app (cores)**
 
 ```promql
-# CPU setiap pod demo-app (cores)
 sum by (pod) (rate(container_cpu_usage_seconds_total{namespace="demo", container="app"}[1m]))
+```
 
-# Utilization yang HPA "nampak": penggunaan / requests
+**Utilization yang HPA "nampak" (% penggunaan / requests)**
+
+```promql
 100 * sum(rate(container_cpu_usage_seconds_total{namespace="demo", container="app"}[1m]))
-    / sum(kube_pod_container_resource_requests{namespace="demo", resource="cpu"})
+    / sum(kube_pod_container_resource_requests{namespace="demo", container="app", resource="cpu"})
+```
 
-# Replicas HPA
+**Replicas HPA**
+
+```promql
 kube_horizontalpodautoscaler_status_current_replicas{namespace="demo"}
+```
 
-# Memori tersedia setiap node (%)
+**Memori tersedia setiap node (%)**
+
+```promql
 100 * node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes
+```
 
-# RPS demo-app mengikut kod HTTP
+**RPS demo-app mengikut kod HTTP**
+
+```promql
 sum by (code) (rate(demo_http_requests_total{path!~"/healthz|/readyz|/metrics"}[1m]))
 ```
 
@@ -579,6 +594,114 @@ Pulihkan selepas makmal:
 kubectl -n monitoring scale deploy kube-state-metrics --replicas=1
 kubectl apply -f ~/bengkel-k8s/modul-1-hpa/05-resourcequota.yaml
 ```
+
+## Cara menulis scrape job sendiri
+
+> Bacaan rujukan, di luar jadual teras. Sesuai dibaca selepas Makmal 3.3 atau selepas bengkel, apabila anda mahu Prometheus mengumpul metrik daripada aplikasi atau servis baharu.
+
+### Nama job ialah label yang kita tulis sendiri
+
+Prometheus tidak datang dengan job `kube-state-metrics`, `node-exporter` atau `kubelet`. Selepas dipasang, Prometheus tidak tahu apa-apa tentang kluster anda. Setiap nama dalam jadual Targets di Makmal 3.3 datang daripada baris `job_name:` yang ditulis dalam [`external/prometheus/prometheus.yml`](external/prometheus/prometheus.yml), dan nama itu menjadi label `job` pada setiap siri metrik (`up{job="node-exporter"}`). Anda boleh menamakannya apa sahaja, asalkan unik dalam fail.
+
+Job dan exporter ialah dua perkara berbeza:
+
+| Job dalam `prometheus.yml` | Siapa yang mendedahkan metrik | Dipasang oleh |
+|---|---|---|
+| `prometheus` | Prometheus sendiri, `localhost:9090/metrics` | `docker compose` (Makmal 3.3) |
+| `kube-state-metrics` | Pod kube-state-metrics, NodePort 30081 | [`k8s/01-kube-state-metrics.yaml`](k8s/01-kube-state-metrics.yaml) (Makmal 3.1) |
+| `node-exporter` | DaemonSet node-exporter, `<IP-node>:9100` | [`k8s/02-node-exporter.yaml`](k8s/02-node-exporter.yaml) (Makmal 3.1) |
+| `kubernetes-cadvisor`, `kubelet` | kubelet pada setiap node (terbina dalam k3s), melalui API server proxy | Sudah ada dalam kluster |
+| `kubernetes-pods` | Pod aplikasi yang ada anotasi `prometheus.io/scrape: "true"` (demo-app) | Deployment aplikasi anda (Modul 1) |
+
+Jika exporter tidak dipasang, job tetap wujud tetapi targetnya `DOWN`. Jika exporter dipasang tetapi tiada job, metriknya tidak pernah dikumpul.
+
+### Tiga perkara yang perlu tahu sebelum menulis job
+
+1. **Di mana target mendedahkan metrik.** Alamat (hostname atau IP), port, dan path, biasanya `/metrics`. Uji dahulu dari tempat Prometheus berjalan: `curl http://<alamat>:<port>/metrics` mesti memulangkan teks seperti `nama_metrik{label="x"} 123`. Jika curl gagal, Prometheus juga akan gagal.
+2. **Sintaks `scrape_configs`.** Setiap job ialah satu item senarai di bawah `scrape_configs:`, sekurang-kurangnya dengan `job_name` dan satu cara mencari target. Medan pilihan yang lazim: `metrics_path` (lalai `/metrics`), `scheme` (lalai `http`), `scrape_interval` (lalai ikut `global`), `authorization` dan `tls_config`.
+3. **Cara mencari target.** `static_configs` untuk senarai alamat tetap, atau service discovery seperti `kubernetes_sd_configs` untuk target yang berubah (pod datang dan pergi). Service discovery hampir selalu digandingkan dengan `relabel_configs`.
+
+### Contoh: job kecil dengan `static_configs`
+
+Alertmanager dan Grafana dalam stack Makmal 3.3 juga mendedahkan `/metrics`, tetapi `prometheus.yml` belum scrape kedua-duanya. Tambah job ini di hujung `scrape_configs:` (perhatikan inden dua ruang, sama dengan job lain):
+
+```yaml
+  # Job sendiri: metrik Alertmanager (bilangan notifikasi dihantar, gagal, dll.)
+  - job_name: alertmanager
+    static_configs:
+      - targets: ["alertmanager:9093"]
+        labels:
+          peranan: monitoring       # label tambahan pada setiap siri daripada target ini
+```
+
+`alertmanager:9093` ialah nama servis dalam `docker-compose.yml`; Prometheus dan Alertmanager berkongsi rangkaian Docker `monitoring`, jadi nama itu boleh diselesaikan. Dari laptop anda, alamat yang sama ialah `localhost:9093`.
+
+### Semak sebelum dan selepas reload
+
+Semak sintaks dengan `promtool`, yang sudah ada dalam image `prom/prometheus`:
+
+```bash
+cd ~/bengkel-k8s/modul-3-monitoring/external
+docker compose exec prometheus promtool check config /etc/prometheus/prometheus.yml
+```
+
+Jangkaan:
+
+```
+Checking /etc/prometheus/prometheus.yml
+  SUCCESS: 1 rule files found
+ SUCCESS: /etc/prometheus/prometheus.yml is valid prometheus config file syntax
+```
+
+Jalankan `promtool` di dalam container, bukan pada fail di laptop: `prometheus.yml` merujuk laluan dalam container seperti `/etc/prometheus/k8s/token`, dan `promtool` gagal jika fail itu tiada pada laluan tersebut. Contoh ralat yang lazim:
+
+| Mesej `promtool` | Punca |
+|---|---|
+| `cannot unmarshal !!str ... into []string` | `targets: alertmanager:9093` tanpa kurungan `[...]`; `targets` mesti senarai |
+| `found multiple scrape configs with job name "alertmanager"` | Dua job dengan `job_name` yang sama |
+| `error checking authorization credentials ... no such file or directory` | `promtool` dijalankan di luar container, atau token belum dijana |
+| `yaml: line N: did not find expected key` | Inden salah (tab, atau bilangan ruang tidak sepadan) |
+
+Jika lulus, muat semula konfigurasi tanpa restart (flag `--web.enable-lifecycle` sudah ada dalam `docker-compose.yml`):
+
+```bash
+curl -X POST localhost:9090/-/reload
+docker compose logs prometheus --tail=5     # cari "Completed loading of configuration file"
+```
+
+Kemudian sahkan di UI Prometheus:
+
+- **Status → Targets** (http://localhost:9090/targets): job `alertmanager` muncul dengan 1 target `UP`. Jika `DOWN`, lajur Error menunjukkan sebabnya (`connection refused`, `404`, `context deadline exceeded`).
+- **Status → Service Discovery** (http://localhost:9090/service-discovery): untuk job yang guna service discovery, halaman ini menunjukkan label asal setiap target sebelum relabel (`__meta_kubernetes_*`) dan target yang dibuang oleh `relabel_configs`. Inilah tempat pertama untuk dilihat apabila job Kubernetes "hilang" target.
+- Query `up{job="alertmanager"}` memulangkan `1`, dan `alertmanager_notifications_total` memaparkan data.
+
+Latihan: tambah job `grafana` untuk `grafana:3000` dengan cara yang sama, kemudian semak di Targets.
+
+### Pengenalan `kubernetes_sd_configs` dan `relabel_configs`
+
+`static_configs` tidak sesuai untuk pod kerana IP dan bilangannya berubah setiap kali scale atau rolling update. `kubernetes_sd_configs` bertanya kepada API server senarai objek (`role: node`, `pod`, `service`, `endpoints`, `ingress`) dan menjadikan setiap satu target. Setiap target membawa label meta seperti `__meta_kubernetes_namespace`, `__meta_kubernetes_pod_name` dan setiap anotasi pod (`__meta_kubernetes_pod_annotation_prometheus_io_scrape`).
+
+`relabel_configs` dijalankan pada setiap target **sebelum** scrape, mengikut susunan. Tindakan yang paling kerap:
+
+| `action` | Kegunaan | Contoh dalam `prometheus.yml` |
+|---|---|---|
+| `keep` | Simpan target yang label sumbernya padan dengan `regex`, buang yang lain | Job `kubernetes-pods`: hanya pod dengan anotasi `prometheus.io/scrape: "true"` dan fasa `Running` |
+| `drop` | Sebaliknya: buang target yang padan | |
+| `replace` (lalai) | Tulis nilai baharu ke `target_label` | Job `node-exporter`: tukar port alamat kepada `9100`; salin `__meta_kubernetes_node_name` ke label `node` |
+
+Label yang bermula dengan `__` dibuang selepas relabel, jadi apa-apa yang mahu dikekalkan (namespace, nama pod) mesti disalin ke label biasa, seperti yang dibuat oleh job `kubernetes-pods`. Tiga label khas mengawal scrape itu sendiri: `__address__` (host:port), `__metrics_path__` dan `__scheme__`.
+
+Untuk aplikasi baharu dalam kluster, anda biasanya **tidak perlu menulis job baharu**: tambah anotasi `prometheus.io/scrape`, `prometheus.io/port` dan `prometheus.io/path` pada template pod (lihat [`02-deployment.yaml`](../modul-1-hpa/02-deployment.yaml) Modul 1), dan job `kubernetes-pods` yang sedia ada akan menjumpainya. Anotasi ini hanya konvensyen yang dibaca oleh `relabel_configs` kita, bukan ciri terbina dalam Prometheus.
+
+### Adakah ada alat web untuk menjana `prometheus.yml`?
+
+Setahu kami tiada penjana web rasmi daripada projek Prometheus. Rujukan utama ialah [halaman konfigurasi](https://prometheus.io/docs/prometheus/latest/configuration/configuration/), yang menyenaraikan setiap medan dan nilai lalainya. Dalam amalan, yang paling membantu ialah:
+
+- `promtool check config` untuk sintaks, sebelum setiap reload.
+- Halaman **Targets** dan **Service Discovery** untuk melihat hasil sebenar.
+- Contoh dalam dokumentasi setiap exporter, yang biasanya menyertakan job sedia guna.
+
+Di produksi, ramai pasukan tidak menulis `prometheus.yml` dengan tangan langsung. Carta Helm **kube-prometheus-stack** memasang Prometheus Operator dalam kluster, dan target ditakrifkan sebagai objek Kubernetes `ServiceMonitor` (pilih Service dengan label) atau `PodMonitor` (pilih pod terus). Operator menjana konfigurasi scrape dan `relabel_configs` daripada objek itu. Bengkel ini kekal dengan fail tangan kerana Prometheus kita berada di luar kluster dan kerana fail tangan menunjukkan apa yang sebenarnya berlaku di bawah objek-objek tersebut.
 
 ## Semakan akhir modul
 

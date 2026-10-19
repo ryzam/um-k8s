@@ -162,11 +162,17 @@ KEDA hanya menjalankan query PromQL; jika query salah di Prometheus, ia salah da
 for i in $(seq 1 300); do curl -s -o /dev/null "localhost:30080/cpu?ms=20"; sleep 0.1; done
 ```
 
-```promql
-# Query yang akan digunakan oleh ScaledObject: jumlah RPS /cpu untuk SEMUA pod demo-app
-sum(rate(demo_http_requests_total{namespace="demo", app="demo-app", path="/cpu"}[1m]))
+Tampal satu query pada satu masa (kotak ekspresi Prometheus menerima satu ekspresi sahaja).
 
-# Tanpa sum(): satu siri setiap pod. KEDA akan menolak ini ("returned multiple elements")
+**Query 1: yang akan digunakan oleh ScaledObject (jumlah RPS /cpu untuk SEMUA pod demo-app)**
+
+```promql
+sum(rate(demo_http_requests_total{namespace="demo", app="demo-app", path="/cpu"}[1m]))
+```
+
+**Query 2: tanpa sum(), satu siri setiap pod. KEDA akan menolak ini ("returned multiple elements")**
+
+```promql
 rate(demo_http_requests_total{namespace="demo", app="demo-app", path="/cpu"}[1m])
 ```
 

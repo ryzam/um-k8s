@@ -411,18 +411,29 @@ Selepas ~1 minit, jangkaan dalam log: `[output:s3:s3.1] Successfully uploaded ob
 
 ### C. Cari log di Grafana
 
-Grafana (http://localhost:3000) → **Explore** → datasource **Loki**. Cuba LogQL:
+Grafana (http://localhost:3000) → **Explore** → datasource **Loki**. Cuba LogQL, satu query pada satu masa (kotak query Grafana menerima satu ekspresi sahaja):
+
+**Semua log container app**
 
 ```logql
 {namespace="demo", container="app"}
+```
 
-# Hanya log daripada pod v2 (Merge_Log menjadikan JSON app sebagai medan)
+**Hanya log daripada pod v2 (Merge_Log menjadikan JSON app sebagai medan)**
+
+```logql
 {namespace="demo"} | json | version="v2"
+```
 
-# Mesej fatal (cth: /crash dari Modul 3)
+**Mesej fatal (cth: /crash dari Modul 3)**
+
+```logql
 {namespace="demo"} | json | level="fatal"
+```
 
-# Kadar log setiap pod, berguna untuk kesan pod "bising"
+**Kadar log setiap pod, berguna untuk kesan pod "bising"**
+
+```logql
 sum by (pod) (rate({namespace="demo"}[1m]))
 ```
 
