@@ -8,7 +8,7 @@ Folder bengkel (`~/bengkel-k8s`) mesti sudah ada: lihat [Dapatkan bahan bengkel]
 
 ## Langkah A1: Cipta kluster `lab`
 
-Fail [`k3d-cluster.yaml`](../k3d-cluster.yaml) mencipta 1 server (control-plane) dan 2 agent (worker) dengan k3s v1.33.1, memetakan NodePort 30080 hingga 30082 ke `localhost`, dan mendedahkan API server pada `127.0.0.1:6550`.
+Fail [`k3d-cluster.yaml`](../k3d-cluster.yaml) mencipta 1 server (control-plane) dan 2 agent (worker) dengan k3s v1.33.1, memetakan NodePort 30080 hingga 30082 ke `localhost`, dan mendedahkan API server pada `127.0.0.1:6550`. Kenapa NodePort, dan apa yang perlu dibuat jika `curl localhost:30080` gagal: [Kenapa makmal guna NodePort](../README.md#kenapa-makmal-guna-nodeport).
 
 ```bash
 cd ~/bengkel-k8s/00-persediaan

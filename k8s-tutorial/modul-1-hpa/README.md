@@ -117,7 +117,7 @@ desiredReplicas = ceil( currentReplicas × currentUtilization / targetUtilizatio
 Contoh: 2 pod, target CPU 50%, purata sekarang 150% → `ceil(2 × 150/50) = 6` pod.
 
 4. Ada toleransi 10%: jika nisbah antara 0.9 hingga 1.1, HPA tidak buat apa-apa (elak "flapping").
-5. Untuk scale-down, HPA ambil nilai tertinggi dalam `stabilizationWindowSeconds` (default 300 saat).
+5. Untuk scale-down, HPA ambil nilai tertinggi dalam `stabilizationWindowSeconds` (default 300 saat). Kadar naik dan turun pula dikawal oleh `behavior`; lihat [Kawal kadar scale](#kawal-kadar-scale-behavior) di bawah.
 
 #### Senario: apa yang HPA nampak, pusingan demi pusingan
 
@@ -154,6 +154,77 @@ Anda akan melihat semua ini sendiri dalam Makmal 1.5 dengan `kubectl -n demo get
 ```
 
 > HPA juga boleh membaca metrik **External** (`external.metrics.k8s.io`), contohnya kadar request daripada Prometheus atau panjang baris gilir, tetapi Kubernetes tidak menyediakan sumbernya sendiri. **KEDA** mengisi peranan itu dan mencipta HPA untuk anda; lihat [Modul 6 (pilihan): KEDA](../modul-6-keda/README.md).
+
+### Kawal kadar scale: `behavior`
+
+Formula di atas hanya menjawab **berapa** pod yang diperlukan. Medan `spec.behavior` pula menentukan **berapa laju** HPA boleh bergerak ke nombor itu. Ia ada dua bahagian yang berasingan, `scaleUp` dan `scaleDown`, dan setiap satu ada tiga tetapan:
+
+| Tetapan | Maksud |
+|---|---|
+| `stabilizationWindowSeconds` | Tempoh HPA "mengingat" cadangan lalu sebelum bertindak. Untuk **scaleDown**, HPA guna cadangan **tertinggi** dalam tetingkap itu; untuk **scaleUp**, cadangan **terendah**. Kesannya: perubahan hanya berlaku jika cadangan itu konsisten sepanjang tetingkap. |
+| `policies` | Senarai had kadar. Setiap polisi ialah `type` + `value` + `periodSeconds`: "dalam mana-mana tempoh `periodSeconds` saat, ubah paling banyak `value`". `type: Pods` = bilangan pod mutlak; `type: Percent` = peratus daripada replicas pada awal tempoh itu. |
+| `selectPolicy` | Bila ada lebih daripada satu polisi: `Max` (default) pilih polisi yang membenarkan perubahan **paling besar**, `Min` pilih yang **paling kecil**, `Disabled` matikan arah itu sama sekali. |
+
+Jika anda tidak menulis `behavior`, Kubernetes guna nilai lalai ini:
+
+| | `scaleUp` (lalai) | `scaleDown` (lalai) |
+|---|---|---|
+| `stabilizationWindowSeconds` | `0` (bertindak segera) | `300` (tunggu 5 minit) |
+| `policies` | `Percent 100` setiap 15 s **dan** `Pods 4` setiap 15 s | `Percent 100` setiap 15 s |
+| `selectPolicy` | `Max` | `Max` |
+| Maksud ringkas | Setiap 15 s boleh gandakan replicas atau tambah 4 pod, ikut mana lebih besar | Selepas 5 minit, boleh terus turun ke `minReplicas` |
+
+Itulah sebabnya dalam senario di atas pod naik dalam satu pusingan tetapi turun selepas 5 minit, sekali gus.
+
+Fail `07-hpa-cpu-memory.yaml` (Makmal 1.6) menetapkan `behavior` sendiri:
+
+```yaml
+behavior:
+  scaleUp:
+    stabilizationWindowSeconds: 0      # naik segera
+    selectPolicy: Max                  # ambil polisi yang beri pertambahan paling besar
+    policies:
+      - type: Percent
+        value: 100                     # gandakan replicas setiap 15 s ...
+        periodSeconds: 15
+      - type: Pods
+        value: 4                       # ... atau tambah 4 pod setiap 15 s
+        periodSeconds: 15
+  scaleDown:
+    stabilizationWindowSeconds: 120    # cadangan rendah mesti kekal 2 minit dahulu
+    selectPolicy: Min
+    policies:
+      - type: Pods
+        value: 1                       # kemudian buang 1 pod setiap 30 s
+        periodSeconds: 30
+```
+
+Anggap beban tiba-tiba memerlukan 10 pod (`maxReplicas`), bermula daripada 2:
+
+| Masa | Replicas sekarang | Had `Percent 100` | Had `Pods 4` | `selectPolicy: Max` | Replicas baharu |
+|---|---|---|---|---|---|
+| T+0 s | 2 | +2 | +4 | +4 | **6** |
+| T+15 s | 6 | +6 | +4 | +6 | 12, dihadkan `maxReplicas` → **10** |
+
+Bila beban berhenti (cadangan turun ke 2):
+
+| Masa | Apa berlaku | Replicas |
+|---|---|---|
+| S+0 hingga S+120 s | Tetingkap 120 s masih ada cadangan 10, jadi HPA guna 10 | 10 |
+| S+120 s | Semua cadangan dalam tetingkap kini rendah; polisi `Pods 1 / 30 s` bermula | 9 |
+| S+150 s, S+180 s, ... | Turun 1 pod setiap 30 s | 8, 7, ... |
+| S+360 s | Sampai `minReplicas` | **2** |
+
+Panduan memilih nilai:
+
+- **Scale up cepat, scale down perlahan.** Pod yang kurang menyebabkan request gagal; pod yang lebih hanya kos sementara. Kebanyakan sistem kekalkan scaleUp lalai dan panjangkan atau perlahankan scaleDown.
+- **Trafik "bergigi" (naik turun setiap minit):** tambah `scaleDown.stabilizationWindowSeconds` supaya pod tidak dibuang dan dicipta semula (flapping).
+- **App lambat start (JVM, cache besar):** scale up agresif kurang membantu kerana pod baharu lambat Ready. Pertimbangkan `minReplicas` lebih tinggi; lihat kelewatan HPA dalam [Modul 2](../modul-2-load-testing/README.md).
+- **Lindungi pergantungan hiliran** (pangkalan data dengan had sambungan): hadkan scaleUp, contohnya `Pods 2` setiap 60 s.
+- **`selectPolicy: Min` untuk scaleDown** sesuai bila ada beberapa polisi dan anda mahu yang paling berhati-hati. Dengan satu polisi sahaja seperti dalam fail ini, `Min` dan `Max` memberi hasil yang sama.
+- **`selectPolicy: Disabled`** membekukan satu arah. Contoh: `scaleDown` Disabled semasa insiden atau acara jualan, supaya kapasiti tidak turun.
+
+> Polisi hanya mengehadkan kelajuan. `minReplicas`, `maxReplicas` dan ResourceQuota masih terpakai, dan pod baharu tetap mengambil masa untuk Ready.
 
 ---
 
@@ -289,6 +360,13 @@ kubectl -n kube-system logs deploy/metrics-server | tail -20
 | `x509: cannot validate certificate` | Sijil kubelet self-signed | Patch `--kubelet-insecure-tls` (lab) |
 | `no such host` / `dial tcp ... i/o timeout` | Metrics Server tak dapat capai kubelet | Tambah `--kubelet-preferred-address-types=InternalIP` |
 | `Failed to scrape node` sejurus selepas pasang | Normal, belum ada data | Tunggu 1 minit |
+
+**Jika `kubectl top` berfungsi tetapi HPA masih `<unknown>`:** baca baris `ScalingActive` dalam `kubectl -n demo describe hpa demo-app`. Lihat juga kolum `Age` pada event; event lama kekal dipaparkan kira-kira sejam walaupun masalahnya sudah selesai.
+
+| Mesej HPA | Punca | Penyelesaian |
+|---|---|---|
+| `unable to fetch metrics from resource metrics API: the server is currently unable to handle the request (get pods.metrics.k8s.io)` | Metrics Server belum dipasang, belum Ready, atau APIService `AVAILABLE` = `False` | Semak `kubectl get apiservice v1beta1.metrics.k8s.io` dan langkah di atas |
+| `missing request for cpu in container app of Pod ...` | Pod masih dari `01-deployment-tanpa-resources.yaml` (QoS `BestEffort`); LimitRange tidak mengubah pod yang sudah berjalan | `kubectl apply -f 02-deployment.yaml` (Makmal 1.2), sahkan QoS `Burstable` |
 
 ## Makmal 1.4: Cari nilai requests dan limits sendiri
 
@@ -482,11 +560,82 @@ Lihat `behavior` yang sedang berkuat kuasa:
 kubectl -n demo get hpa demo-app -o yaml | sed -n '/behavior:/,/metrics:/p'
 ```
 
+### Sahkan `behavior` dengan beban CPU
+
+Tunggu sehingga replicas kembali ke 2 selepas ujian memori di atas. Kini lihat polisi scaleUp dan scaleDown bekerja, dengan masa yang boleh dibandingkan dengan jadual dalam [Kawal kadar scale](#kawal-kadar-scale-behavior).
+
+Terminal kedua, catat replicas setiap 5 saat bersama masa:
+
+```bash
+while true; do
+  echo "$(date +%T)  semasa=$(kubectl -n demo get hpa demo-app -o jsonpath='{.status.currentReplicas}')  dikehendaki=$(kubectl -n demo get hpa demo-app -o jsonpath='{.status.desiredReplicas}')"
+  sleep 5
+done
+```
+
+Terminal pertama, jana beban CPU yang sama seperti Makmal 1.5, tetapi dengan tiga pelanggan supaya HPA mahukan `maxReplicas`:
+
+```bash
+for i in 1 2 3; do
+  kubectl -n demo run beban-$i --image=busybox:1.36 --restart=Never -- /bin/sh -c \
+    'while true; do wget -q -O- "http://demo-app/cpu?ms=200" >/dev/null; done'
+done
+```
+
+Jangkaan scale-up: replicas melompat **2 → 6 → 10** dalam dua langkah, kira-kira 15 saat antara satu sama lain (bukan 2 → 3 → 4). Sahkan dari `Events`:
+
+```bash
+kubectl -n demo describe hpa demo-app | sed -n '/Events/,$p'
+```
+
+```
+Normal  SuccessfulRescale  New size: 6; reason: cpu resource utilization (percentage of request) above target
+Normal  SuccessfulRescale  New size: 10; reason: cpu resource utilization (percentage of request) above target
+```
+
+> Jika lompatan pertama lebih kecil, mungkin pod lama belum mencapai CPU tinggi semasa pusingan pertama. Yang penting: setiap langkah tidak melebihi `max(100%, 4 pod)`.
+
+Hentikan beban dan perhatikan scale-down:
+
+```bash
+kubectl -n demo delete pod beban-1 beban-2 beban-3
+kubectl -n demo describe hpa demo-app | sed -n '/Conditions/,/Events/p'
+```
+
+Semasa dalam tetingkap 120 saat, `Conditions` menunjukkan sesuatu seperti:
+
+```
+AbleToScale  True  ScaleDownStabilized  recent recommendations were higher than current one, applying the highest recent recommendation
+```
+
+Jangkaan: `dikehendaki` turun ke 2 dalam masa kira-kira 1 minit (bergantung pada metrik), tetapi `semasa` kekal 10 sehingga tetingkap 120 s tamat. Selepas itu replicas turun **1 pod setiap 30 saat** (10, 9, 8, ...), dan sampai 2 kira-kira 4 minit kemudian. Hentikan gelung terminal kedua dengan Ctrl+C.
+
+**Soalan:** Jika `scaleDown` menggunakan nilai lalai (tiada `behavior`), apa yang akan anda lihat? (Jawapan: tunggu 300 saat, kemudian terus 10 → 2 dalam satu langkah kerana `Percent 100`.)
+
 ## Makmal 1.7 (cabaran): Kawal kadar scale
 
-1. Ubah `07-hpa-cpu-memory.yaml` supaya scale-up dihadkan kepada **2 pod setiap 60 saat**. Jalankan semula beban CPU dari Makmal 1.5 dan bandingkan kelajuan scale-out.
+1. Ubah `07-hpa-cpu-memory.yaml` supaya scale-up dihadkan kepada **2 pod setiap 60 saat**. Jalankan semula beban CPU dari bahagian "Sahkan `behavior`" dan bandingkan kelajuan scale-out. Semasa scale-up dihadkan, `describe hpa` menunjukkan condition `ScalingLimited True ScaleUpLimit`.
 2. Set `scaleDown.selectPolicy: Disabled`. Apa yang berlaku bila beban berhenti? Bila ini berguna? (Contoh: semasa insiden, untuk "bekukan" kapasiti.)
 3. Ubah `requests.cpu` kepada `50m` dalam `02-deployment.yaml` dan apply. Dengan beban yang sama, adakah HPA mencipta lebih atau kurang pod? Kenapa?
+
+<details>
+<summary>Jawapan cabaran 1 dan 2</summary>
+
+Cabaran 1, gantikan blok `scaleUp`:
+
+```yaml
+  scaleUp:
+    stabilizationWindowSeconds: 0
+    policies:
+      - type: Pods
+        value: 2
+        periodSeconds: 60
+```
+
+Replicas naik 2 → 4 → 6 → 8 → 10, satu langkah setiap minit (kira-kira 4 minit berbanding 15 saat). Sesuai bila pergantungan hiliran tidak tahan lonjakan sambungan.
+
+Cabaran 2: dengan `selectPolicy: Disabled`, replicas kekal pada nilai tertinggi selepas beban berhenti. Tiada event `SuccessfulRescale` ke bawah walaupun `dikehendaki` rendah. Untuk pulihkan, apply semula `07-hpa-cpu-memory.yaml`.
+</details>
 
 <details>
 <summary>Jawapan cabaran 3</summary>
@@ -505,6 +654,7 @@ Senarai semak:
 - [ ] `kubectl top pods` berfungsi
 - [ ] HPA `demo-app` menunjukkan nilai CPU dan memori (bukan `<unknown>`)
 - [ ] Peserta boleh terangkan formula `desiredReplicas`
+- [ ] Peserta boleh terangkan `policies` (Pods/Percent, `periodSeconds`), `selectPolicy` dan `stabilizationWindowSeconds`
 - [ ] Peserta boleh terangkan beza CPU throttling dan OOMKilled
 - [ ] Peserta boleh terangkan cara mendapatkan nilai requests dan limits daripada pengukuran
 

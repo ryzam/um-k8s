@@ -17,7 +17,7 @@ Dalam modul ini peserta akan:
 
 | Masa | Aktiviti |
 |---|---|
-| 9:00 – 9:30 | Teori: jenis metrik K8s, seni bina monitoring luaran, Pilihan A vs B |
+| 9:00 – 9:30 | Teori: jenis metrik K8s, Prometheus vs Grafana, cara mereka bentuk dashboard, seni bina monitoring luaran, Pilihan A vs B |
 | 9:30 – 10:15 | Makmal 3.1 & 3.2: pasang exporter, RBAC untuk Prometheus luar |
 | 10:15 – 10:45 | Makmal 3.3: naikkan stack luar, sahkan semua target `UP` |
 | 10:45 – 11:00 | Rehat |
@@ -38,6 +38,61 @@ Dalam modul ini peserta akan:
 | **node-exporter** | Bagaimana keadaan **OS node**? | `node_cpu_seconds_total`, `node_memory_MemAvailable_bytes`, `node_filesystem_avail_bytes` |
 
 > **Metrics Server ≠ Prometheus.** Metrics Server (Modul 1) hanya simpan nilai terkini dalam memori untuk HPA dan `kubectl top`. Ia tiada sejarah dan tidak boleh di-query dengan PromQL.
+
+### Prometheus vs Grafana: siapa buat apa
+
+Ramai pemula keliru kerana kedua-duanya "ada graf". Pembahagian kerjanya mudah:
+
+| | Prometheus | Grafana |
+|---|---|---|
+| Peranan | **Kumpul dan simpan** metrik | **Paparkan** metrik |
+| Cara kerja | Setiap 15 saat, *scrape* (tarik) `/metrics` dari setiap target (exporter, pod), simpan sebagai siri masa | Hantar query PromQL kepada Prometheus, terima nombor, lukis graf |
+| Bahasa | PromQL (Prometheus yang menjalankan query) | Tiada bahasa sendiri untuk metrik; ia hanya menghantar PromQL anda |
+| Simpan data? | Ya (TSDB, contoh 15 hari) | Tidak. Grafana hanya simpan definisi dashboard |
+| Tanpa yang satu lagi | Masih berfungsi: query di http://localhost:9090, alert tetap jalan | Kosong. Tiada datasource, tiada graf |
+
+Aliran satu panel: **exporter → Prometheus scrape dan simpan → Grafana hantar PromQL → Prometheus jawab → Grafana lukis**. Maka setiap panel Grafana sebenarnya ialah **satu atau lebih query PromQL + tetapan paparan** (jenis graf, unit, warna, threshold). Jika query betul di Prometheus (`localhost:9090/query`), ia akan betul di Grafana. Uji query di Prometheus dahulu, kemudian salin ke panel.
+
+Tiga corak PromQL yang meliputi hampir semua panel dalam bengkel ini:
+
+| Jenis metrik | Contoh | Cara guna |
+|---|---|---|
+| **Counter** (sentiasa naik, `_total`) | `demo_http_requests_total` | Jangan plot terus. Guna `rate(...[1m])` untuk dapat "per saat" |
+| **Gauge** (naik turun) | `container_memory_working_set_bytes`, `kube_..._current_replicas` | Plot terus, atau `sum by (pod)` |
+| **Nisbah** | penggunaan / requests | `100 * A / B` untuk peratus, seperti cara HPA mengira |
+
+### Cara mereka bentuk dashboard
+
+Jangan mula dengan "metrik apa yang ada". Mula dengan **soalan yang mahu dijawab semasa insiden**, kemudian cari metrik yang menjawabnya. Dua senarai semak yang biasa digunakan:
+
+- **USE** untuk *resource* (node, CPU, memori): **U**tilization (berapa % digunakan), **S**aturation (ada yang beratur atau dihadkan?), **E**rrors.
+- **RED** untuk *servis* (aplikasi): **R**ate (request sesaat), **E**rrors (kadar ralat), **D**uration (latensi). Google SRE memanggil gabungannya *four golden signals*: latency, traffic, errors, saturation.
+
+Susun dashboard dari atas ke bawah, daripada gambaran besar ke butiran, supaya mata bergerak seperti proses diagnosis. Dashboard bengkel ([`bengkel-k8s-hpa.json`](external/grafana/dashboards/bengkel-k8s-hpa.json)) mengikut corak ini:
+
+| Soalan | Panel dalam dashboard bengkel | Kaedah |
+|---|---|---|
+| Adakah kluster sihat sekarang? | Node Ready / NotReady, Pod tidak sihat, Alert firing (stat, satu nombor besar) | E |
+| Adakah node penuh? | CPU node (%), Memori node (%) | USE: U |
+| Berapa CPU pod guna berbanding apa yang ia minta? | CPU pod vs requests & limits (garis putus-putus = requests/limits) | USE: U |
+| Adakah pod hampir OOMKilled? | Memori pod (working set) vs limits | USE: S |
+| Adakah pod dihadkan oleh limits CPU? | CPU throttling (%), lebih 25% = latency terjejas | USE: S |
+| Adakah pod crash berulang kali? | Restart container (1 jam), Pod mengikut fasa | USE: E |
+| Adakah HPA bertindak, dan adakah ia tersekat? | Replicas semasa / dikehendaki / min / max | Khusus HPA |
+| Kenapa HPA scale (atau tidak)? | Utilization CPU & memori vs sasaran HPA | Khusus HPA |
+| Berapa banyak trafik, dan berapa yang gagal? | Request sesaat mengikut kod HTTP | RED: R, E |
+| Trafik pergi ke versi mana? | Request sesaat mengikut versi | RED: R (Modul 4) |
+
+Perhatikan satu corak penting: **letak nilai sebenar dan had/sasaran dalam panel yang sama**. CPU sahaja tidak bermakna; CPU berbanding requests memberitahu HPA, dan berbanding limits memberitahu throttling. Replicas sahaja tidak bermakna; semasa berbanding dikehendaki memberitahu sama ada quota atau node menyekat scale.
+
+Yang **tiada** dalam dashboard bengkel: **latensi (D dalam RED)**. demo-app hanya mengeluarkan counter `demo_http_requests_total`, tiada histogram masa respons, jadi latensi diukur dari sisi klien oleh k6 di Modul 2. Dalam aplikasi sebenar, tambah histogram (contoh `http_request_duration_seconds_bucket`) dan plot p95 dengan `histogram_quantile(0.95, sum by (le) (rate(..._bucket[5m])))`.
+
+Tips paparan ringkas:
+
+- **Stat** untuk "berapa sekarang" (Node Ready, alert firing); **Time series** untuk "bagaimana ia berubah" (hampir semua yang lain).
+- Sentiasa tetapkan **unit** (percent, bytes, cores, req/s) dan **threshold warna** yang sama dengan threshold alert, supaya merah di dashboard bermaksud perkara yang sama dengan alert.
+- Guna **pembolehubah** (`$namespace`, `$deployment`) supaya satu dashboard boleh digunakan untuk banyak aplikasi.
+- Hadkan setiap dashboard kepada satu tujuan. Kalau lebih kurang 15 panel tidak cukup, pecahkan kepada dashboard baharu dan pautkan.
 
 ### Seni bina makmal (Pilihan A: Prometheus luar scrape terus)
 
@@ -229,6 +284,8 @@ k6 run ~/bengkel-k8s/modul-2-load-testing/k6/load.js
 Perhatikan bagaimana garisan **CPU sebenar** melintasi **sasaran CPU**, kemudian **dikehendaki** naik, diikuti **semasa** beberapa saat kemudian. Itulah kelewatan HPA yang kita ukur di Modul 2, kini dalam bentuk visual.
 
 ### B. Bina panel sendiri
+
+Sebelum mula, ingat semula [Cara mereka bentuk dashboard](#cara-mereka-bentuk-dashboard): panel ini menjawab soalan "berapa peratus request gagal?" (E dalam RED).
 
 Latihan: tambah panel baharu **"Kadar ralat 5xx (%)"** pada baris Aplikasi.
 

@@ -84,6 +84,10 @@ Kemudian `wsl --shutdown` dalam PowerShell supaya tetapan baharu digunakan.
 
 > Simpan folder bengkel dalam home Ubuntu (`~/bengkel-k8s`), bukan di `/mnt/c/...`; akses fail Windows dari WSL jauh lebih perlahan. Dari Windows Explorer, folder ini boleh dibuka di `\\wsl$\Ubuntu\home\<nama>`.
 
+> **Selepas restart Windows, WSL atau Docker Desktop**, container kluster k3d berhenti. `docker ps` kosong (hanya header) dan `kubectl` gagal bersambung, tetapi kluster masih ada. Semak `docker ps -a` (container `k3d-lab-*` berstatus *Exited*) dan `k3d cluster list`, kemudian hidupkan semula: `k3d cluster start lab`. Jika `docker ps -a` pun kosong dan `k3d cluster list` tiada `lab`, kluster belum dicipta pada daemon ini; cipta seperti dalam [Opsyen A](opsyen-a/README.md).
+>
+> **Satu Docker sahaja.** Jangan pasang Docker Engine dalam Ubuntu jika anda guna Docker Desktop. Jika kedua-duanya ada, `docker` dalam Ubuntu mungkin bercakap dengan daemon Ubuntu sendiri, dan container yang dicipta melalui Docker Desktop (atau sebaliknya) tidak kelihatan. Semak `docker context ls` dan `docker info --format '{{.Name}} / {{.OperatingSystem}}'`: dengan Docker Desktop, `OperatingSystem` ialah `Docker Desktop`. Jika ia menunjukkan `Ubuntu`, hentikan daemon Ubuntu (`sudo systemctl disable --now docker docker.socket`), pastikan WSL Integration dihidupkan, buka terminal baharu dan semak semula. Tanda lain dua daemon: `kubectl get nodes` menunjukkan node `k3d-lab-*` tetapi `docker ps -a` dan `k3d cluster list` tidak, dan `ss -ltnp | grep 6550` dalam Ubuntu menunjukkan `docker-proxy`. Ini bermakna kluster berjalan dalam Docker Engine Ubuntu, manakala `/var/run/docker.sock` sudah diambil alih oleh Docker Desktop.
+
 ### macOS
 
 **1. Pasang Docker Desktop.** Muat turun dari [Install Docker Desktop on Mac](https://docs.docker.com/desktop/setup/install/mac-install/) (pilih *Apple silicon* untuk M1/M2/M3/M4 atau *Intel chip*), seret ke Applications dan buka. Atau dengan Homebrew: `brew install --cask docker-desktop`.
@@ -222,6 +226,7 @@ Jika `docker version` hanya memaparkan bahagian *Client* dan ralat, Docker daemo
 |---|---|---|
 | `Cannot connect to the Docker daemon at unix:///var/run/docker.sock. Is the docker daemon running?` | Docker belum berjalan | Windows/macOS: buka Docker Desktop dan tunggu *Engine running*. Linux: `sudo systemctl start docker` (dan `sudo systemctl enable docker` supaya bermula semasa boot) |
 | `permission denied while trying to connect to the Docker daemon socket` | Pengguna Linux belum dalam kumpulan `docker` | `sudo usermod -aG docker $USER`, kemudian log keluar dan masuk semula (atau `newgrp docker`). Jangan jalankan makmal dengan `sudo` |
+| `docker ps` kosong (hanya header) dan `kubectl` gagal: `connection refused` / `Unable to connect to the server` | Container kluster berhenti selepas restart, atau `docker` menunjuk ke daemon lain | `docker ps -a` dan `k3d cluster list`. Jika `lab` wujud: `k3d cluster start lab`. Jika tiada langsung: lihat nota [Satu Docker sahaja](#windows-wsl2-docker-desktop), atau cipta kluster |
 | `docker: command not found` dalam Ubuntu (WSL2) | WSL Integration belum dihidupkan | Docker Desktop → **Settings → Resources → WSL Integration** → hidupkan Ubuntu → *Apply & restart*. Tutup dan buka semula terminal Ubuntu |
 | `WSL 2 requires an update to its kernel component` atau Docker Desktop gagal bermula pada Windows | WSL2 belum lengkap | PowerShell (admin): `wsl --install`, kemudian `wsl --update`, restart. `wsl --list --verbose` mesti menunjukkan VERSION 2 |
 | `Please enable the Virtual Machine Platform Windows feature and ensure virtualization is enabled in the BIOS` | Virtualisasi dimatikan | Hidupkan Intel VT-x / AMD-V (SVM) dalam BIOS/UEFI. Semak: Task Manager → Performance → CPU → *Virtualization: Enabled* |
@@ -282,9 +287,59 @@ ln -sfn "$PWD" ~/bengkel-k8s
 ls ~/bengkel-k8s/modul-1-hpa      # mesti menyenaraikan fail modul
 ```
 
+## Kenapa makmal guna NodePort
+
+Dalam kluster sebenar, aplikasi biasanya didedahkan melalui Ingress atau Service `LoadBalancer`. Dalam makmal ini, Service yang perlu dicapai dari laptop menggunakan **NodePort**. Sebabnya ialah cara k3d berfungsi:
+
+- **Setiap node k3d ialah container Docker** (`k3d-lab-server-0`, `k3d-lab-agent-0`, `k3d-lab-agent-1`). IP pod dan ClusterIP hanya wujud di dalam rangkaian kluster, jadi `curl` dari laptop ke alamat itu tidak sampai.
+- **NodePort membuka port yang sama (julat 30000-32767) pada setiap node.** Bahagian `ports:` dalam [`k3d-cluster.yaml`](k3d-cluster.yaml) memetakan port laptop 30080, 30081 dan 30082 terus ke container `k3d-lab-server-0` (`nodeFilters: [server:0:direct]`). Pod app berjalan pada agent, tetapi kube-proxy pada `server-0` memajukan trafik ke pod tersebut.
+- **Ia cara paling ringkas.** Traefik (ingress terbina dalam k3s) dimatikan, jadi tiada ingress controller, hostname atau sijil TLS untuk disediakan.
+
+```
+laptop: curl localhost:30080
+   │  pemetaan port Docker (ports: dalam k3d-cluster.yaml)
+   ▼
+container k3d-lab-server-0, port 30080 (NodePort)
+   │  kube-proxy
+   ▼
+Service demo-app (port 80) ──▶ pod demo-app pada k3d-lab-agent-0 / agent-1 (port http)
+```
+
+| Port laptop | Service | Fail | Digunakan dalam |
+|---|---|---|---|
+| 30080 | `demo-app` (namespace `demo`) | `modul-1-hpa/03-service.yaml` | Modul 1, 2, 3, 4 dan 6: `curl`, k6, Locust |
+| 30081 | `kube-state-metrics` (namespace `monitoring`) | `modul-3-monitoring/k8s/01-kube-state-metrics.yaml` | Modul 3: Prometheus di luar kluster |
+| 30082 | `demo-bg` (namespace `demo`) | `modul-4-operations/blue-green/03-service.yaml` | Modul 4: blue-green |
+
+NodePort hanya untuk trafik **dari luar** kluster. Antara pod di dalam kluster, komunikasi tetap melalui ClusterIP dan nama DNS Service, contohnya Job k6 dalam Modul 2 memanggil `http://demo-app.demo.svc.cluster.local`.
+
+Alternatif yang akan anda jumpa:
+
+| Cara | Bila sesuai | Had |
+|---|---|---|
+| `kubectl -n demo port-forward svc/demo-app 8080:80` | Akses sementara untuk satu orang (Modul 5 menggunakannya) | Berhenti bila arahan dihentikan; trafik pergi ke satu pod sahaja, jadi tidak sesuai untuk ujian beban atau HPA |
+| Ingress (Traefik) | Lebih dekat dengan produksi: hostname, TLS, banyak app pada port 80/443 | Perlu Traefik aktif dan port 443 dipetakan; Opsyen B cara sekali menggunakannya untuk Rancher |
+
+> **Pemetaan port hanya ditetapkan semasa kluster dicipta.** Mengubah `ports:` dalam fail YAML selepas `k3d cluster create` tidak memberi kesan pada kluster yang sedang berjalan. Cara paling selamat ialah cipta semula kluster.
+
+**`curl localhost:30080` memberi `Connection refused`?** Semak pemetaan port dahulu:
+
+```bash
+docker port k3d-lab-server-0
+```
+
+Jangkaan: tiga baris `30080/tcp -> 0.0.0.0:30080`, `30081/tcp -> ...` dan `30082/tcp -> ...`.
+
+- **Tiada baris 30080:** kluster dicipta tanpa fail konfigurasi makmal (contohnya `k3d cluster create lab` sahaja). Padam dengan `k3d cluster delete lab`, cipta semula dengan fail yang betul, kemudian ulang langkah uji app demo pada halaman opsyen anda:
+  - Opsyen A, dan Opsyen B cara berasingan: `00-persediaan/k3d-cluster.yaml`
+  - Opsyen B cara sekali: `00-persediaan/rancher/k3d-lab-rancher.yaml` (port 30080 hingga 30082 yang sama, ditambah Traefik dan port 443)
+- **Baris 30080 ada:** Service atau pod belum sedia. Semak `kubectl -n demo get svc,pods` dan `kubectl -n demo get endpoints demo-app`; endpoint kosong bermaksud tiada pod `Ready`.
+
+Sementara menunggu kluster dicipta semula, `kubectl -n demo port-forward svc/demo-app 30080:80` boleh digunakan untuk ujian ringkas, tetapi jangan gunakannya untuk makmal ujian beban.
+
 ## Seterusnya: pilih opsyen
 
-Halaman opsyen mencipta kluster `lab`, menerangkan apa yang disediakan, dan menguji app demo untuk memastikan semuanya berfungsi.
+Halaman opsyen mencipta kluster `lab` (dengan pemetaan NodePort di atas), menerangkan apa yang disediakan, dan menguji app demo untuk memastikan semuanya berfungsi.
 
 
 - **[Persediaan Opsyen A: k3d sahaja](opsyen-a/README.md)**: satu kluster `lab`, kubectl terus ke API server (~15 minit).
