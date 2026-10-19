@@ -16,6 +16,7 @@ SVG_RULES = """
 .tl{fill:var(--d-muted);font-size:11px;letter-spacing:.06em;text-transform:uppercase;font-weight:600}
 .ta{fill:var(--d-acc);font-size:12px;font-weight:600}
 .tw{fill:var(--d-warn);font-size:12px;font-weight:600}
+.tn{fill:var(--d-box);font-size:11px;font-weight:700}
 .m{font-family:var(--d-mono)}
 .arr{fill:none;stroke:var(--d-arrow);stroke-width:1.6}
 .arra{fill:none;stroke:var(--d-acc);stroke-width:1.8}
@@ -494,10 +495,114 @@ def keda_hpa():
     return d
 
 
+def aliran_data_grafana():
+    d = D("ag", 900, 540, "Aliran data dari exporter ke panel Grafana",
+          "Prometheus tarik /metrics daripada kube-state-metrics, node-exporter, cAdvisor dan demo-app setiap 15 saat dan simpan dalam TSDB. "
+          "Grafana tahu alamat Prometheus daripada fail provisioning datasources/prometheus.yml (url http://prometheus:9090) "
+          "dan memuat dashboard JSON melalui provisioning/dashboards/provider.yml. Panel menghantar PromQL ke /api/v1/query_range, "
+          "Prometheus menjawab JSON, dan Grafana melukis graf dalam pelayar.")
+
+    def badge(x, y, n):
+        d.add(f'<circle cx="{x}" cy="{y}" r="9" class="solid"/>')
+        d.text(x, y + 4, str(n), "tn", "middle")
+
+    # Kluster: sumber metrik
+    d.rect(16, 30, 170, 290, "zone", 12)
+    d.text(30, 56, "Kluster k3d “lab”", "th")
+    srcs = [("kube-state-metrics", "NodePort :30081"), ("node-exporter", ":9100"),
+            ("cAdvisor", "melalui API server"), ("demo-app", "melalui API server")]
+    for i, (n, sub) in enumerate(srcs):
+        y = 72 + i * 60
+        d.node(26, y, 150, 48, n, sub, mono_sub=sub.startswith(":") or sub.startswith("Node"))
+        d.path(f"M176,{y + 24} H194 V151 H226", acc=True)
+    badge(194, 186, 1)
+
+    # docker compose: Prometheus dan Grafana
+    d.rect(202, 30, 438, 290, "zone2", 12)
+    d.text(218, 56, "docker compose", "th")
+    d.text(626, 56, "rangkaian monitoring", "ts m", "end")
+    d.rect(218, 72, 168, 240, "acc")
+    d.text(302, 94, "Prometheus", "th", "middle")
+    d.text(302, 112, "prometheus:9090", "ts m", "middle")
+    d.node(228, 126, 148, 50, "Scrape (pull)", "ikut prometheus.yml")
+    d.node(228, 188, 148, 50, "TSDB", "siri masa, 7 hari")
+    d.node(228, 250, 148, 50, "HTTP API", "/api/v1/query_range", mono_sub=True)
+    d.path("M302,176 V186")
+    d.path("M302,238 V248")
+    badge(376, 188, 2)
+
+    d.rect(462, 72, 164, 240, "box")
+    d.text(544, 94, "Grafana", "th", "middle")
+    d.text(544, 112, "localhost:3000", "ts m", "middle")
+    d.node(472, 126, 144, 50, "Data source", "uid: prometheus", "okb", mono_sub=True)
+    d.node(472, 188, 144, 50, "Dashboard", "dari fail JSON", "okb")
+    d.node(472, 250, 144, 50, "Panel", "query + paparan")
+    d.path("M544,238 V248")
+
+    # Grafana -> Prometheus (PromQL) dan jawapan (JSON)
+    d.path("M472,151 H424 V275 H378", acc=True)
+    d.text(448, 140, "PromQL", "ta", "middle")
+    badge(448, 151, 4)
+    d.path("M378,290 H470")
+    d.text(424, 310, "JSON", "ts", "middle")
+    badge(424, 290, 5)
+
+    # Fail provisioning
+    d.rect(652, 30, 232, 290, "zone", 12)
+    d.text(666, 56, "Fail provisioning", "th")
+    badge(866, 51, 3)
+    d.rect(660, 72, 216, 118, "okb")
+    for j, (s, c) in enumerate([("datasources/prometheus.yml", "ts m"), ("name: Prometheus", "ts m"),
+                                ("uid: prometheus", "ts m"), ("url: http://prometheus:9090", "ta m"),
+                                ("(nama servis compose)", "ts")]):
+        d.text(670, 94 + j * 20, s, c)
+    d.path("M660,151 H618")
+    d.rect(660, 204, 216, 104, "okb")
+    for j, (s, c) in enumerate([("dashboards/provider.yml", "ts m"), ("muat setiap *.json dari", "ts"),
+                                ("grafana/dashboards/", "ts m"), ("bengkel-k8s-hpa.json", "ta m")]):
+        d.text(670, 226 + j * 20, s, c)
+    d.path("M660,226 H646 V213 H618")
+
+    # Langkah
+    d.rect(16, 354, 410, 170, "zone", 12)
+    d.text(32, 378, "Langkah", "tl")
+    steps = ["Prometheus tarik (pull) /metrics setiap 15 s",
+             "Sampel disimpan sebagai siri masa dalam TSDB",
+             "Semasa mula, Grafana baca fail provisioning",
+             "Panel hantar PromQL ke /api/v1/query_range",
+             "Prometheus jawab JSON: senarai [masa, nilai]",
+             "Grafana lukis graf dalam pelayar"]
+    for i, s in enumerate(steps):
+        y = 402 + i * 20
+        badge(38, y - 4, i + 1)
+        d.text(56, y, s, "ts")
+
+    # Pelayar
+    d.path("M544,300 V352", acc=True)
+    badge(544, 334, 6)
+    d.rect(440, 354, 444, 170, "zone2", 12)
+    d.text(456, 380, "Pelayar anda", "th")
+    d.text(456, 400, "localhost:3000", "ts m")
+    d.text(456, 432, "Refresh dashboard", "ts")
+    d.text(456, 450, "setiap 10 s = ulang", "ts")
+    d.text(456, 468, "langkah 4 hingga 6", "ts")
+    d.rect(604, 368, 266, 142, "box")
+    d.text(616, 388, "CPU pod vs requests & limits", "ts")
+    for gy in (420, 450, 480):
+        d.add(f'<line x1="616" y1="{gy}" x2="858" y2="{gy}" class="grid"/>')
+    d.add('<line x1="616" y1="412" x2="858" y2="412" class="arr dash"/>')
+    d.text(620, 406, "limits", "ts")
+    d.add('<line x1="616" y1="466" x2="858" y2="466" class="arr dash"/>')
+    d.text(620, 460, "requests", "ts")
+    d.add('<polyline points="616,494 646,492 676,486 706,470 736,446 766,430 796,438 826,452 858,458" class="arra"/>')
+    return d
+
+
 ALL = {
     "seni-bina-makmal": seni_bina, "aliran-hpa": aliran_hpa, "kelewatan-hpa": kelewatan_hpa,
     "bentuk-ujian-beban": load_tests, "monitoring-luar-kluster": monitoring_luar, "pilihan-b-remote-write": pilihan_b,
     "penghalaan-alert": penghalaan_alert, "strategi-deployment": strategi, "penamatan-pod": penamatan_pod,
     "log-shipping": log_shipping, "aliran-diagnosis": diagnosis, "seni-bina-rancher": seni_bina_rancher,
     "seni-bina-rancher-sekali": seni_bina_rancher_sekali, "keda-di-atas-hpa": keda_hpa,
+    "aliran-data-grafana": aliran_data_grafana,
 }

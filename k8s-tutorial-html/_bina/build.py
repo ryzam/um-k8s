@@ -38,6 +38,7 @@ CAPTIONS = {
     "penamatan-pod": "Tanpa preStop, app boleh berhenti sebelum kube-proxy berhenti menghantar trafik kepadanya.",
     "log-shipping": "Fluent Bit menghantar ke dua destinasi: Loki untuk carian, S3 untuk arkib jangka panjang.",
     "aliran-diagnosis": "Mulakan dengan STATUS pod, kemudian ikut cabang ke bukti yang betul.",
+    "aliran-data-grafana": "Grafana tidak scrape apa-apa: Prometheus simpan data, Grafana tahu alamatnya daripada fail provisioning dan hanya menghantar PromQL.",
     "keda-di-atas-hpa": "KEDA tidak menggantikan HPA: operator mencipta HPA dan melakukan 0 ↔ 1, HPA biasa melakukan 1 ↔ N.",
 }
 
@@ -45,7 +46,7 @@ CAPTIONS = {
 ASCII = [("Laptop peserta", "seni-bina-makmal"), ("HPA controller", "aliran-hpa"),
          ("metric-resolution", "kelewatan-hpa"), ("API server :6443", "monitoring-luar-kluster"),
          ("severity=\"critical\"  ─▶", "penghalaan-alert"), ("kubectl / rollout memadam pod", "penamatan-pod"),
-         ("/var/log/containers/*.log", "log-shipping"), ('Kluster k3d "rancher"', "seni-bina-rancher"), ("Rancher di dalam", "seni-bina-rancher-sekali"), ("kubectl get pods            ─▶", "aliran-diagnosis"), ("cipta/urus", "keda-di-atas-hpa")]
+         ("/var/log/containers/*.log", "log-shipping"), ('Kluster k3d "rancher"', "seni-bina-rancher"), ("Rancher di dalam", "seni-bina-rancher-sekali"), ("kubectl get pods            ─▶", "aliran-diagnosis"), ("cipta/urus", "keda-di-atas-hpa"), ("GET /api/v1/query_range", "aliran-data-grafana")]
 # Diagram tambahan disuntik sebelum tajuk tertentu: (modul, tajuk, sisipan)
 INJECT = [("m2", "### Model beban", '<div data-fig="bentuk-ujian-beban"></div>'),
           ("m3", "| | Pilihan A: scrape dari luar", '<div data-fig="pilihan-b-remote-write"></div>'),

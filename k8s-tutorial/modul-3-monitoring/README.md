@@ -52,7 +52,7 @@ Ramai pemula keliru kerana kedua-duanya "ada graf". Pembahagian kerjanya mudah:
 | Simpan data? | Ya (TSDB, contoh 15 hari) | Tidak. Grafana hanya simpan definisi dashboard |
 | Tanpa yang satu lagi | Masih berfungsi: query di http://localhost:9090, alert tetap jalan | Kosong. Tiada datasource, tiada graf |
 
-Aliran satu panel: **exporter → Prometheus scrape dan simpan → Grafana hantar PromQL → Prometheus jawab → Grafana lukis**. Maka setiap panel Grafana sebenarnya ialah **satu atau lebih query PromQL + tetapan paparan** (jenis graf, unit, warna, threshold). Jika query betul di Prometheus (`localhost:9090/query`), ia akan betul di Grafana. Uji query di Prometheus dahulu, kemudian salin ke panel.
+Aliran satu panel: **exporter → Prometheus scrape dan simpan → Grafana hantar PromQL → Prometheus jawab → Grafana lukis**. Maka setiap panel Grafana sebenarnya ialah **satu atau lebih query PromQL + tetapan paparan** (jenis graf, unit, warna, threshold). Jika query betul di Prometheus (`localhost:9090/query`), ia akan betul di Grafana. Uji query di Prometheus dahulu, kemudian salin ke panel. Rajah penuh aliran ini, dan cara Grafana tahu alamat Prometheus: [Bagaimana Grafana tahu di mana Prometheus](#bagaimana-grafana-tahu-di-mana-prometheus).
 
 Tiga corak PromQL yang meliputi hampir semua panel dalam bengkel ini:
 
@@ -421,7 +421,7 @@ curl -X POST localhost:9090/-/reload
 
 ### A. Dashboard yang disediakan
 
-Buka Grafana → **Dashboards → Bengkel K8s → Bengkel K8s: Kluster, Pod & HPA**. Dashboard ini diprovision dari [`external/grafana/dashboards/bengkel-k8s-hpa.json`](external/grafana/dashboards/bengkel-k8s-hpa.json) dan mengandungi:
+Buka Grafana → **Dashboards → Bengkel K8s → Bengkel K8s: Kluster, Pod & HPA**. Dashboard ini diprovision dari [`external/grafana/dashboards/bengkel-k8s-hpa.json`](external/grafana/dashboards/bengkel-k8s-hpa.json). Tiada langkah import: Grafana memuatnya sendiri semasa `docker compose up -d` dalam Makmal 3.3, melalui `grafana/provisioning/dashboards/provider.yml` ([cara ia berfungsi](#bagaimana-grafana-tahu-di-mana-prometheus)). Dashboard ini mengandungi:
 
 | Baris | Panel |
 |---|---|
@@ -442,7 +442,7 @@ Perhatikan bagaimana garisan **CPU sebenar** melintasi **sasaran CPU**, kemudian
 
 Sebelum mula, ingat semula [Cara mereka bentuk dashboard](#cara-mereka-bentuk-dashboard): panel ini menjawab soalan "berapa peratus request gagal?" (E dalam RED).
 
-Latihan: tambah panel baharu **"Kadar ralat 5xx (%)"** pada baris Aplikasi.
+Latihan: tambah panel baharu **"Kadar ralat 5xx (%)"** pada baris Aplikasi. Panduan langkah demi langkah yang lebih terperinci (Explore, pilihan panel, unit, threshold): [Cara mereka graf sendiri dalam Grafana](#cara-mereka-graf-sendiri-dalam-grafana).
 
 1. Klik **Edit → Add → Visualization**.
 2. Query:
@@ -451,7 +451,7 @@ Latihan: tambah panel baharu **"Kadar ralat 5xx (%)"** pada baris Aplikasi.
        / sum(rate(demo_http_requests_total{namespace="$namespace"}[$__rate_interval]))
    ```
 3. Unit: **Percent (0-100)**. Thresholds: hijau < 1, oren < 5, merah ≥ 5.
-4. Simpan. Kemudian **Export → Export as JSON** dan simpan ke `grafana/dashboards/` supaya ia jadi kod (dashboard-as-code).
+4. Simpan. Kemudian **Export → Export as JSON** (suis eksport ke instance lain **OFF**) dan simpan ke `grafana/dashboards/` supaya ia jadi kod (dashboard-as-code). Butiran: [Simpan panel sebagai kod](#simpan-panel-sebagai-kod).
 
 Latihan tambahan: panel **"Pod Pending vs desired HPA"** untuk mengesan bottleneck node penuh dari Modul 2.
 
@@ -594,6 +594,214 @@ Pulihkan selepas makmal:
 kubectl -n monitoring scale deploy kube-state-metrics --replicas=1
 kubectl apply -f ~/bengkel-k8s/modul-1-hpa/05-resourcequota.yaml
 ```
+
+## Cara mereka graf sendiri dalam Grafana
+
+> Bacaan rujukan dan latihan, di luar jadual teras. Sesuai dibaca selepas Makmal 3.4. [Cara mereka bentuk dashboard](#cara-mereka-bentuk-dashboard) menjawab soalan **apa** yang patut dipaparkan; seksyen ini menunjukkan **cara** membinanya dalam Grafana.
+
+### Bagaimana Grafana tahu di mana Prometheus
+
+```
+ Kluster k3d "lab"        docker compose (rangkaian monitoring)
+ ┌────────────────────┐     ┌─────────────────────────┐        ┌────────────────┐
+ │ kube-state-metrics │ (1) │ Prometheus :9090        │  (4)   │ Grafana :3000  │
+ │ node-exporter      │────▶│ scrape (pull, 15 s)     │◀───────│ data source    │ ◀── datasources/prometheus.yml
+ │ cAdvisor (proxy)   │pull │ (2) TSDB, 7 hari        │ PromQL │ dashboard JSON │ ◀── dashboards/provider.yml
+ │ demo-app (proxy)   │     │ GET /api/v1/query_range │───────▶│ panel          │     + grafana/dashboards/*.json
+ └────────────────────┘     └─────────────────────────┘ (5)JSON └───────┬────────┘     (3) dibaca semasa Grafana mula
+                                                                        │ (6)
+                                                                        ▼
+                                                          pelayar http://localhost:3000
+```
+
+Grafana tidak scrape apa-apa dan tidak menyimpan metrik. Ia perlu tahu dua perkara sahaja: **di mana Prometheus** (data source) dan **apa yang mahu dilukis** (dashboard). Dalam bengkel, kedua-duanya datang daripada fail, bukan klik di UI. Ini dipanggil *provisioning*.
+
+**1. Data source.** [`docker-compose.yml`](external/docker-compose.yml) mount `./grafana/provisioning` ke `/etc/grafana/provisioning` dalam container Grafana. Semasa Grafana mula, ia membaca [`grafana/provisioning/datasources/prometheus.yml`](external/grafana/provisioning/datasources/prometheus.yml):
+
+```yaml
+datasources:
+  - name: Prometheus
+    uid: prometheus          # dashboard JSON merujuk data source melalui uid ini
+    type: prometheus
+    access: proxy            # pelayar -> Grafana -> Prometheus (pelayar tidak bercakap terus dengan Prometheus)
+    url: http://prometheus:9090
+    isDefault: true
+```
+
+- `prometheus` dalam URL ialah **nama servis** dalam `docker-compose.yml`. Grafana dan Prometheus berada dalam rangkaian Docker `monitoring` yang sama, dan DNS Docker menukar nama itu kepada IP container Prometheus.
+- Sebab itu `http://localhost:9090` **salah** sebagai URL data source: di dalam container Grafana, `localhost` ialah container Grafana sendiri. Alamat yang sama betul dalam pelayar anda kerana port 9090 dipetakan ke laptop.
+- Setiap panel dalam [`bengkel-k8s-hpa.json`](external/grafana/dashboards/bengkel-k8s-hpa.json) menulis `"datasource": {"type": "prometheus", "uid": "prometheus"}`. Jika `uid` data source ditukar, panel akan memaparkan *Datasource not found*.
+
+**2. Dashboard.** Tiada langkah import manual dalam bengkel. `docker-compose.yml` juga mount `./grafana/dashboards` ke `/var/lib/grafana/dashboards`, dan [`grafana/provisioning/dashboards/provider.yml`](external/grafana/provisioning/dashboards/provider.yml) menyuruh Grafana memuat setiap fail `*.json` di situ ke dalam folder **Bengkel K8s**:
+
+```yaml
+providers:
+  - name: bengkel-k8s
+    folder: Bengkel K8s
+    type: file
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards
+```
+
+Jadi dashboard muncul sendiri di **Dashboards → Bengkel K8s** sebaik sahaja `docker compose up -d` dalam Makmal 3.3 selesai. Perkara yang perlu tahu:
+
+| Situasi | Apa yang berlaku |
+|---|---|
+| Fail JSON diubah atau fail baharu ditambah dalam `grafana/dashboards/` | Grafana baca semula dalam lebih kurang 10 saat (nilai lalai `updateIntervalSeconds`). Tidak perlu restart |
+| Dashboard diubah dan disimpan di UI | Dibenarkan kerana `allowUiUpdates: true`, tetapi hanya disimpan dalam pangkalan data Grafana (volume `grafana-data`), bukan dalam fail |
+| Fail JSON berubah selepas itu | Isi fail menang. Perubahan UI yang belum dieksport ke fail akan hilang |
+| `docker compose down -v` | Pangkalan data Grafana dibuang; dashboard dimuat semula daripada fail, perubahan UI hilang |
+
+Kesimpulannya, **fail JSON ialah sumber kebenaran**. Selepas mengubah dashboard di UI, eksport semula ke fail (lihat [Simpan panel sebagai kod](#simpan-panel-sebagai-kod)).
+
+Alternatif tanpa provisioning, contohnya pada Grafana yang bukan milik anda: **Dashboards → New → Import → Upload dashboard JSON file**, pilih fail dan data source `Prometheus`. Dashboard yang diimport begini hanya wujud dalam pangkalan data Grafana itu.
+
+**3. Satu panel dimuat semula.** Setiap kali dashboard refresh (dashboard bengkel: setiap 10 s), pelayar meminta Grafana (`/api/ds/query`), dan pelayan Grafana menghantar PromQL setiap panel ke Prometheus melalui `GET /api/v1/query_range` dengan julat masa dan `step`. Prometheus menjawab JSON berisi senarai `[masa, nilai]` untuk setiap siri, dan Grafana melukisnya.
+
+Lihat sendiri permintaan ini: pada mana-mana panel, menu **⋮ → Inspect → Query → Refresh**. Atau buat permintaan yang sama dengan `curl` dari terminal:
+
+```bash
+curl -s http://localhost:9090/api/v1/query_range \
+  --data-urlencode 'query=sum(kube_node_status_condition{condition="Ready",status="true"})' \
+  --data-urlencode "start=$(date -d '-5 min' +%s)" \
+  --data-urlencode "end=$(date +%s)" \
+  --data-urlencode 'step=15s' | head -c 400; echo
+```
+
+Jangkaan: `{"status":"success","data":{"resultType":"matrix","result":[{"metric":{},"values":[[1760...,"3"], ...`. Itulah satu-satunya data yang Grafana terima. Semak juga data source di **Connections → Data sources → Prometheus → Test**: data source yang diprovision tidak boleh diubah di UI, tetapi boleh diuji.
+
+### Skil dan pengetahuan yang diperlukan
+
+| Skil | Kenapa perlu | Di mana dalam bengkel |
+|---|---|---|
+| Tahu metrik apa yang wujud, dan labelnya | Query hanya boleh guna nama dan label yang benar-benar ada | `curl localhost:30080/metrics`, Prometheus **Status → Targets**, Metrics browser di Explore |
+| Jenis metrik: counter, gauge, histogram | Menentukan fungsi yang dipakai (`rate`, terus, `histogram_quantile`) | Jadual jenis metrik dalam [Prometheus vs Grafana](#prometheus-vs-grafana-siapa-buat-apa) |
+| PromQL asas | Setiap panel ialah query PromQL | [Corak PromQL untuk panel](#corak-promql-untuk-panel) di bawah |
+| Explore | Uji query tanpa mengganggu dashboard | Latihan di bawah |
+| Pilih jenis panel | Graf yang salah menyembunyikan masalah | [Pilih jenis panel](#pilih-jenis-panel) |
+| Unit, min/max, threshold, legend | Nombor tanpa unit dan warna sukar dibaca semasa insiden | Latihan di bawah |
+| Pembolehubah dashboard | Satu dashboard untuk banyak namespace dan aplikasi | `$namespace`, `$deployment` dalam dashboard bengkel |
+| Dashboard-as-code | Dashboard boleh disemak, di-*review* dan dipulihkan dari Git | Provisioning di atas |
+
+Histogram belum ada dalam demo-app. Ia mengeluarkan siri `_bucket`, `_sum` dan `_count`; persentil dikira dengan `histogram_quantile` seperti contoh p95 dalam [Cara mereka bentuk dashboard](#cara-mereka-bentuk-dashboard).
+
+### Corak PromQL untuk panel
+
+Uji setiap query di Explore atau UI Prometheus, satu query pada satu masa. Di dalam dashboard, gantikan `demo` dengan `$namespace` dan `[1m]` dengan `[$__rate_interval]`.
+
+**Tapis dengan label** (`=`, `!=`, `=~` regex, `!~` bukan regex):
+
+```promql
+demo_http_requests_total{namespace="demo", code=~"5.."}
+```
+
+**Counter jadi kadar sesaat**, kemudian jumlahkan semua pod:
+
+```promql
+sum(rate(demo_http_requests_total{namespace="demo"}[1m]))
+```
+
+**Satu garis bagi setiap pod** (`by` mengekalkan label yang disebut, label lain digabungkan):
+
+```promql
+sum by (pod) (rate(container_cpu_usage_seconds_total{namespace="demo", container!=""}[1m]))
+```
+
+**Nisbah sebagai peratus**, sama seperti cara HPA mengira utilization:
+
+```promql
+100 * sum(rate(container_cpu_usage_seconds_total{namespace="demo", container="app"}[1m])) / sum(kube_pod_container_resource_requests{namespace="demo", container="app", resource="cpu"})
+```
+
+**N teratas** sahaja, berguna bila banyak pod:
+
+```promql
+topk(3, sum by (pod) (container_memory_working_set_bytes{namespace="demo", container!=""}))
+```
+
+**Paparkan 0, bukan "No data"**, bila tiada siri (contoh tiada alert firing):
+
+```promql
+count(ALERTS{alertstate="firing"}) or vector(0)
+```
+
+Kesilapan biasa:
+
+| Gejala | Punca | Betulkan |
+|---|---|---|
+| Graf naik sahaja, tidak pernah turun | Counter diplot terus | Balut dengan `rate(...[$__rate_interval])` |
+| "No data" | Nama label atau nilai salah, atau julat masa tiada data | Buang penapis label satu demi satu; semak julat masa di atas kanan |
+| Graf putus-putus atau kosong pada zoom tertentu | Julat `[1m]` terlalu kecil berbanding `step` | Guna `[$__rate_interval]` |
+| Satu garis sahaja, sepatutnya satu bagi setiap pod | `sum(...)` tanpa `by (pod)` | Tambah `by (pod)` |
+| Legend panjang dengan semua label | Legend lalai | **Legend → Custom** `{{pod}}` |
+| Nisbah memberi "No data" | Label kedua-dua belah tidak sepadan | Agregat kedua-dua belah dengan `by` yang sama |
+
+### Pilih jenis panel
+
+| Jenis panel | Bila guna | Contoh dalam bengkel |
+|---|---|---|
+| **Time series** | Nilai berubah mengikut masa; bandingkan dengan had | CPU pod vs requests & limits |
+| **Stat** | Satu nombor "sekarang" yang besar | Node Ready, Alert sedang firing |
+| **Gauge** / **Bar gauge** | Peratus berbanding had, satu bar bagi setiap pod | Latihan di bawah: memori pod vs limits |
+| **Table** | Senarai dengan banyak lajur (pod, node, restart) | Cadangan: pod dengan bilangan restart tertinggi |
+| **State timeline** | Keadaan berubah (Ready/NotReady, fasa pod) | Cadangan: status Ready setiap node |
+| **Heatmap** | Taburan latensi daripada histogram | Aplikasi sebenar dengan `_bucket` |
+
+### Latihan: bina satu panel dari kosong
+
+Matlamat: panel **"Memori pod vs limits (%)"** yang menunjukkan pod mana hampir OOMKilled. Threshold mengikut alert `ContainerMemoryNearLimit` (90%) dalam [`kubernetes-alerts.yml`](external/prometheus/rules/kubernetes-alerts.yml), supaya merah di dashboard bermaksud perkara yang sama dengan alert.
+
+**Langkah 1: uji query di Explore.**
+
+1. Grafana → menu kiri **Explore**. Pilih data source **Prometheus** di atas.
+2. Mod **Builder** membantu pemula: pilih metrik `container_memory_working_set_bytes`, tambah **Label filters** `namespace = demo`, kemudian **+ Operations → Aggregations → Sum** dengan label `pod`. Tukar ke mod **Code** untuk melihat PromQL yang dijana.
+3. Dalam mod **Code**, tulis query penuh dan klik **Run query**:
+
+   ```promql
+   100 * sum by (pod) (container_memory_working_set_bytes{namespace="demo", container!=""}) / sum by (pod) (kube_pod_container_resource_limits{namespace="demo", resource="memory"})
+   ```
+
+4. Semak hasil dalam paparan **Table**: satu baris bagi setiap pod demo-app, nilai antara 0 dan 100. Dengan limits 256Mi, pod yang rehat biasanya di bawah 20%. Jika kosong, jalankan bahagian pertama (sebelum `/`) dahulu, kemudian bahagian kedua, untuk cari belah mana yang tiada data.
+
+**Langkah 2: tambah ke dashboard.**
+
+1. Buka **Bengkel K8s: Kluster, Pod & HPA** → **Edit → Add → Visualization**. (Dari Explore, **Add → Add to dashboard** juga boleh.)
+2. Data source: **Prometheus**. Tampal query, tetapi guna pembolehubah dashboard supaya panel ikut pilihan di atas:
+
+   ```promql
+   100 * sum by (pod) (container_memory_working_set_bytes{namespace="$namespace", pod=~"$deployment-.*", container!=""}) / sum by (pod) (kube_pod_container_resource_limits{namespace="$namespace", pod=~"$deployment-.*", resource="memory"})
+   ```
+
+3. Di bawah query: **Options → Legend → Custom** `{{pod}}`.
+4. Di kanan atas, pilih visualization **Bar gauge**. Tetapkan dalam panel kanan (guna kotak carian **Search options**):
+   - **Title**: `Memori pod vs limits (%)`; **Description**: `Lebih 90% selama 5 minit mencetuskan ContainerMemoryNearLimit`.
+   - **Value options → Calculation**: `Last *`.
+   - **Standard options → Unit**: `Percent (0-100)`; **Min** `0`; **Max** `100`.
+   - **Thresholds**: Base hijau, `70` oren, `90` merah.
+   - **Bar gauge → Display mode**: `Gradient`, **Orientation**: `Horizontal`.
+5. **Back to dashboard**, seret panel ke baris *Prestasi pod*, kemudian **Save dashboard**.
+6. Uji: jalankan `k6 run ~/bengkel-k8s/modul-2-load-testing/k6/load.js` dan perhatikan bar setiap pod. Bila HPA menambah pod, bar baharu muncul sendiri kerana `by (pod)`.
+
+### Simpan panel sebagai kod
+
+Panel yang disimpan di UI hanya ada dalam pangkalan data Grafana. Untuk menjadikannya kekal:
+
+1. Dashboard → **Export → Export as JSON**.
+2. Biarkan suis untuk berkongsi ke instance lain (**Export the dashboard to use in another instance**, atau *Export for sharing externally* dalam versi lama) dalam keadaan **OFF**. Jika ON, Grafana menggantikan `uid: prometheus` dengan input `${DS_PROMETHEUS}` yang tidak difahami oleh provisioning fail.
+3. **Download file** atau **Copy to clipboard**, dan gantikan `~/bengkel-k8s/modul-3-monitoring/external/grafana/dashboards/bengkel-k8s-hpa.json`. Kekalkan `"uid": "bengkel-k8s-hpa"` supaya Grafana mengemas kini dashboard yang sama, bukan mencipta salinan.
+4. Dalam 10 saat Grafana memuat semula fail. Commit fail itu ke Git.
+
+Untuk menyalin satu panel sahaja ke dashboard lain: menu panel **⋮ → Inspect → Panel JSON**, atau **⋮ → More → Copy** kemudian di dashboard lain **Add → Paste panel**.
+
+### Latihan tambahan: pembolehubah `pod`
+
+Pembolehubah `$namespace` dan `$deployment` ditakrif di **Edit → Settings → Variables**. Tambah satu lagi:
+
+1. **New variable**: Name `pod`, Type **Query**, data source Prometheus.
+2. Query: `label_values(kube_pod_info{namespace="$namespace"}, pod)`.
+3. Aktifkan **Multi-value** dan **Include All option**.
+4. Dalam panel tadi, tukar `pod=~"$deployment-.*"` kepada `pod=~"$pod"`. Pilih satu atau dua pod di atas dashboard dan lihat panel berubah.
 
 ## Cara menulis scrape job sendiri
 
