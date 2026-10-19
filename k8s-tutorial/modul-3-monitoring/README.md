@@ -18,8 +18,9 @@ Dalam modul ini peserta akan:
 | Masa | Aktiviti |
 |---|---|
 | 9:00 – 9:30 | Teori: jenis metrik K8s, Prometheus vs Grafana, cara mereka bentuk dashboard, seni bina monitoring luaran, Pilihan A vs B |
-| 9:30 – 10:15 | Makmal 3.1 & 3.2: pasang exporter, RBAC untuk Prometheus luar |
-| 10:15 – 10:45 | Makmal 3.3: naikkan stack luar, sahkan semua target `UP` |
+| 9:30 – 10:00 | Makmal 3.1 & 3.2: pasang exporter, RBAC untuk Prometheus luar |
+| 10:00 – 10:30 | Makmal 3.3: naikkan stack luar (Pilihan A), sahkan semua target `UP` |
+| 10:30 – 10:45 | Makmal 3.3B: tukar ke Pilihan B, bandingkan, kembali ke Pilihan A |
 | 10:45 – 11:00 | Rehat |
 | 11:00 – 11:45 | Makmal 3.4: dashboard Grafana (yang disediakan + bina panel sendiri) |
 | 11:45 – 12:40 | Makmal 3.5 & 3.6: alert rules, Alertmanager, Email/Slack/Teams, Grafana alerting |
@@ -112,7 +113,7 @@ Tips paparan ringkas:
  └───────────────────────
 ```
 
-Langkah untuk Pilihan A ialah Makmal 3.1 (exporter), 3.2 (RBAC + token) dan [Makmal 3.3](#makmal-3-3-naikkan-stack-monitoring-luar) (naikkan Prometheus, Alertmanager dan Grafana dengan `docker compose`). Pilihan B di bawah ialah alternatif, bukan langkah tambahan; langkahnya dalam [Makmal 3.3B](#makmal-3-3b-alternatif-tukar-kepada-pilihan-b).
+Langkah untuk Pilihan A ialah Makmal 3.1 (exporter), 3.2 (RBAC + token) dan [Makmal 3.3](#makmal-3-3-naikkan-stack-monitoring-luar) (naikkan Prometheus, Alertmanager dan Grafana dengan `docker compose`). Dalam bengkel, semua peserta buat Pilihan A dahulu, kemudian tukar ke Pilihan B dalam [Makmal 3.3B](#makmal-3-3b-tukar-kepada-pilihan-b-dan-bandingkan) supaya dapat merasai kelebihan dan kekurangan kedua-dua cara.
 
 Kenapa melalui **API server proxy** untuk cAdvisor dan pod? Kerana IP pod (`10.42.x.x` dalam k3s) tidak boleh dicapai dari luar kluster, dan port kubelet 10250 biasanya ditutup. API server biasanya sudah boleh dicapai, dan akses dikawal oleh RBAC.
 
@@ -130,7 +131,7 @@ Bila Prometheus luar **tidak boleh** capai kluster langsung (firewall hanya bena
 | Prometheus luar scrape | Semua job kluster | Job `prometheus` sahaja |
 | Token ServiceAccount di luar | Perlu (`get-k8s-credentials.sh`) | Tidak perlu |
 
-**Pilihan B tidak menggantikan stack `docker compose`.** Agent dalam kluster hanya mengumpul dan menghantar metrik; ia tidak menyimpan data untuk query, tidak menilai peraturan alert dan tiada UI. Prometheus luar masih diperlukan untuk menyimpan data, menilai alert dan menjadi datasource Grafana, jadi Prometheus, Alertmanager, Grafana dan Mailpit tetap dinaikkan dengan `docker compose up -d` seperti Makmal 3.3. Yang berubah hanya konfigurasi Prometheus luar (berhenti scrape kluster) dan satu manifest tambahan dalam kluster. Langkah penuh: [Makmal 3.3B](#makmal-3-3b-alternatif-tukar-kepada-pilihan-b).
+**Pilihan B tidak menggantikan stack `docker compose`.** Agent dalam kluster hanya mengumpul dan menghantar metrik; ia tidak menyimpan data untuk query, tidak menilai peraturan alert dan tiada UI. Prometheus luar masih diperlukan untuk menyimpan data, menilai alert dan menjadi datasource Grafana, jadi Prometheus, Alertmanager, Grafana dan Mailpit tetap dinaikkan dengan `docker compose up -d` seperti Makmal 3.3. Yang berubah hanya konfigurasi Prometheus luar (berhenti scrape kluster) dan satu manifest tambahan dalam kluster. Langkah penuh: [Makmal 3.3B](#makmal-3-3b-tukar-kepada-pilihan-b-dan-bandingkan).
 
 ### Nota: Apa itu OpenTelemetry dan bila perlu
 
@@ -319,9 +320,13 @@ kube_horizontalpodautoscaler_status_current_replicas{namespace="demo"}
 sum by (code) (rate(demo_http_requests_total{path!~"/healthz|/readyz|/metrics"}[1m]))
 ```
 
-## Makmal 3.3B (alternatif): Tukar kepada Pilihan B
+## Makmal 3.3B: Tukar kepada Pilihan B dan bandingkan
 
-Langkau bahagian ini jika anda kekal dengan Pilihan A. Bahagian ini mengandaikan Makmal 3.1 dan 3.3 sudah siap: exporter berjalan dalam kluster dan stack `docker compose` sudah `Up`. Ringkasan apa yang dijalankan di mana:
+Dalam bengkel, makmal ini dibuat selepas Pilihan A berjalan (Makmal 3.1 hingga 3.3), supaya anda boleh membandingkan kedua-dua cara pada kluster yang sama. Di hujung makmal, anda kembali ke Pilihan A kerana makmal seterusnya (dan Modul 5) bermula dari Pilihan A.
+
+> **Terus guna Pilihan B (di luar bengkel)?** Boleh. Langkahnya hampir sama dengan Pilihan A: Makmal 3.1 (exporter) dan `kubectl apply -f k8s/03-prometheus-external-rbac.yaml` daripada Makmal 3.2 tetap dibuat, `get-k8s-credentials.sh` dilangkau, `docker compose up -d` dalam Makmal 3.3 tetap dibuat, kemudian terus ke Langkah 1 hingga 4 di bawah. Dalam Makmal 3.3, jadual target `UP` hanya untuk Pilihan A; untuk Pilihan B guna semakan dalam Langkah 4.
+
+Ringkasan apa yang dijalankan di mana:
 
 | Komponen | Pilihan A | Pilihan B |
 |---|---|---|
@@ -383,9 +388,11 @@ kubectl -n monitoring port-forward deploy/prometheus-agent 9091:9090
 | Query memulangkan nilai berganda | Prometheus luar masih scrape kluster | Ulang Langkah 1, semak hanya job `prometheus` di Targets |
 | Tiada `kubernetes-cadvisor` | RBAC `nodes/metrics` | `kubectl auth can-i get nodes/metrics --as=system:serviceaccount:monitoring:prometheus-agent` |
 
+**Bandingkan (perbincangan 5 minit):** dari sisi rangkaian, Pilihan A perlukan Prometheus luar boleh capai API server dan node, manakala Pilihan B hanya perlukan kluster boleh capai Prometheus luar. Dari sisi operasi, Pilihan A tiada komponen tambahan dalam kluster dan halaman Targets terus menunjukkan kesihatan setiap sasaran, manakala Pilihan B menambah satu pod agent tetapi menahan data dalam WAL jika rangkaian putus.
+
 Perbezaan tingkah laku alert: jika exporter mati, agent masih menghantar `up == 0` dan alert seperti Pilihan A berbunyi. Tetapi jika **agent sendiri** mati, tiada data langsung sampai, jadi alert perlu mengesan ketiadaan data, contohnya `absent(up{job="node-exporter", cluster="lab"})`. Di persekitaran sebenar, port `remote_write` Prometheus luar menerima trafik masuk dari kluster, jadi lindungi dengan TLS dan pengesahan (`basic_auth` atau token dalam blok `remote_write`).
 
-Kembali ke Pilihan A:
+Kembali ke Pilihan A sebelum Makmal 3.4:
 
 ```bash
 kubectl delete -f k8s/04-pilihan-b-prometheus-agent.yaml
